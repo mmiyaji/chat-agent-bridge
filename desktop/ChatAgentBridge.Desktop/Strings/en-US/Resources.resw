@@ -937,6 +937,13 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxRequestLabel.Text" xml:space="preserve"><value>Request</value></data>
   <data name="InboxRequestPicker.PlaceholderText" xml:space="preserve"><value>Choose a request</value></data>
   <data name="InboxPromptLabel.Text" xml:space="preserve"><value>Request details</value></data>
+  <data name="InboxExecutionConditions.Text" xml:space="preserve"><value>Execution conditions</value></data>
+  <data name="InboxExecutionAgent.Text" xml:space="preserve"><value>Agent</value></data>
+  <data name="InboxExecutionWorkspace.Text" xml:space="preserve"><value>Workspace</value></data>
+  <data name="InboxExecutionResultPolicy.Text" xml:space="preserve"><value>Result sharing</value></data>
+  <data name="InboxResultBodyLabel.Text" xml:space="preserve"><value>Result text</value></data>
+  <data name="InboxResultAttachmentsLabel.Text" xml:space="preserve"><value>Attachments</value></data>
+  <data name="InboxResultDestinationLabel.Text" xml:space="preserve"><value>Destination</value></data>
   <data name="InboxContextLabel.Text" xml:space="preserve"><value>Execution and conversation details</value></data>
   <data name="InboxResultLabel.Text" xml:space="preserve"><value>Execution result</value></data>
   <data name="InboxApprove.Content" xml:space="preserve"><value>Approve / run</value></data>
@@ -944,10 +951,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxReject.Content" xml:space="preserve"><value>Reject</value></data>
   <data name="InboxRejectBar.Label" xml:space="preserve"><value>Reject</value></data>
   <data name="InboxStop.Content" xml:space="preserve"><value>Stop</value></data>
-  <data name="InboxStopBar.Label" xml:space="preserve"><value>Stop</value></data>
+  <data name="InboxStopBar.Content" xml:space="preserve"><value>Stop</value></data>
   <data name="InboxShare.Content" xml:space="preserve"><value>Share result</value></data>
-  <data name="InboxShareBar.Label" xml:space="preserve"><value>Share result</value></data>
-  <data name="InboxAttachmentsBar.Label" xml:space="preserve"><value>Review and send files</value></data>
+  <data name="InboxShareBar.Content" xml:space="preserve"><value>Share result</value></data>
+  <data name="InboxAttachmentsBar.Content" xml:space="preserve"><value>Review files</value></data>
   <data name="InboxApprovalHelpButton.AutomationProperties.Name" xml:space="preserve"><value>Approval and sharing help</value></data>
   <data name="InboxApprovalHelpTip.Title" xml:space="preserve"><value>Approval and file sharing</value></data>
   <data name="InboxApprovalHelpTip.Subtitle" xml:space="preserve"><value>These permissions are checked separately for the selected request.</value></data>

@@ -42,7 +42,7 @@ function Element([string]$Id){(Root).FindFirst([Windows.Automation.TreeScope]::D
 function Scoped-Element([string]$Scope,[string]$Id){$root=Element $Scope;if(-not $root){return $null};return $root.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))}
 function Value([string]$Id,[string]$Scope=''){$el=if($Scope){Scoped-Element $Scope $Id}else{Element $Id};if(-not $el){throw "Missing UI control $Id"};$pattern=$el.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern);return [string]$pattern.Current.Value}
 function Enabled([string]$Id,[string]$Scope=''){$el=if($Scope){Scoped-Element $Scope $Id}else{Element $Id};if(-not $el){throw "Missing UI control $Id"};return [bool]$el.Current.IsEnabled}
-function AssertDisabledOrGone([string]$Id,[string]$Scope,[string]$Message){$el=Scoped-Element $Scope $Id;if($el){Assert (-not $el.Current.IsEnabled) $Message}}
+function AssertDisabledOrGone([string]$Id,[string]$Scope,[string]$Message){$el=if($Scope){Scoped-Element $Scope $Id}else{Element $Id};if($el){Assert (-not $el.Current.IsEnabled) $Message}}
 function Wait-HistoryStatus([string]$Status,[string]$ThreadId='',[int]$Seconds=15){
     $historyPath=Join-Path $dataPath 'history.json';$until=[DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do{
@@ -68,25 +68,25 @@ function Post-Chat([string]$Id,[string]$Thread,[string]$Prompt){
     Assert ($reply.delivered -eq 1) 'The loopback Mattermost fixture has no connected client.'
 }
 function Select-ChatRequest([string]$Prompt){
-    $search=Element 'InboxSearch'
-    if(-not $search -or $search.Current.IsOffscreen){
-        $back=Element 'InboxBackToConversations'
-        if($back){UI @('invoke','InboxBackToConversations')|Out-Null;Start-Sleep -Milliseconds 150}
+    $back=Element 'InboxBackToConversations'
+    if($back -and -not $back.Current.IsOffscreen){
+        $back.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
     }
-    UI @('set-value','InboxSearch',$Prompt)|Out-Null
+    UI @('wait-for','InboxConversations','-t','5000')|Out-Null
     $list=Element 'InboxConversations'
-    $row=$list.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::ListItem))
+    $rowType=[Windows.Automation.PropertyCondition]::new(
+        [Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::ListItem)
+    $row=$list.FindAll([Windows.Automation.TreeScope]::Descendants,$rowType) | Where-Object {
+        $itemText=$_.FindAll([Windows.Automation.TreeScope]::Subtree,[Windows.Automation.Condition]::TrueCondition) |
+            ForEach-Object { $_.Current.Name }
+        ($itemText -join "`n").Contains($Prompt,[StringComparison]::Ordinal)
+    } | Select-Object -First 1
     if(-not $row){throw "No isolated conversation row for $Prompt"}
+    $row.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
     # Invoke raises ListView.ItemClick as well as selection, which opens the detail
     # pane in the narrow layout used by this test.
     $row.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
-    Start-Sleep -Milliseconds 150
-    UI @('wait-for','ChatRequests','-t','5000')|Out-Null
-    $combo=Element 'ChatRequests';$expand=$combo.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern);$expand.Expand();Start-Sleep -Milliseconds 100
-    $all=[Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::ListItem))
-    $choice=$null;foreach($item in $all){if($item.Current.ProcessId -eq $appProcess.Id -and $item.Current.Name.Contains($Prompt)){$choice=$item;break}}
-    if(-not $choice){throw "No request option for $Prompt"}
-    $choice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select();$expand.Collapse()
+    Wait-Contains 'InboxSelectedPrompt' $Prompt 5
 }
 function Run-Chat([string]$Prompt){
     Select-ChatRequest $Prompt
@@ -138,6 +138,7 @@ try{
     Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme='light'}
+    Write-Json 'tips.json' @{Seen=@('chat-connect')}
     if($Portable){
         $appRoot=[IO.Path]::GetFullPath($AppDirectory)
         if(-not $appRoot.StartsWith($artifactRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Portable app payload must be under desktop/artifacts.'}
@@ -211,7 +212,7 @@ try{
     Resize 500
     Run-Chat 'LIVE_RUN_CHAT_A isolated conversation A'
     Wait-Contains 'LiveOutputText' 'LIVE_RUN_CHAT_A LIVE_FIXTURE assistant output arrived' 25 'ChatLiveOutput'
-    UI @('scroll-into-view','LiveOutputCancel')|Out-Null
+    UI @('wait-for','CancelChat','-p','IsEnabled','--value','True','-t','5000')|Out-Null
     Capture ("live-output-$Language-chat-cancel-active-dark-500.png")
     Select-ChatRequest 'LIVE_RUN_CHAT_B isolated conversation B'
     $selectedB=Scoped-Element 'ChatLiveOutput' 'LiveOutputText'
@@ -220,13 +221,12 @@ try{
     Assert ((Element 'ActiveRequestBanner').Current.Name.Contains('LIVE_RUN_CHAT_A')) 'The active request banner did not identify conversation A.'
     UI @('scroll-into-view','ActiveRequestBanner')|Out-Null
     Capture ("live-output-$Language-chat-active-banner-500.png")
-    Assert (-not (Enabled 'CancelChat')) 'The selected conversation B can cancel the active conversation A request.'
+    AssertDisabledOrGone 'CancelChat' '' 'The selected conversation B can cancel the active conversation A request.'
     UI @('invoke','ActiveRequestBanner')|Out-Null
     Wait-Contains 'LiveOutputText' 'LIVE_RUN_CHAT_A LIVE_FIXTURE assistant output arrived' 10 'ChatLiveOutput'
-    Assert (Enabled 'LiveOutputCancel' 'ChatLiveOutput') 'Returning to the active request did not enable its scoped cancel button.'
-    UI @('invoke','LiveOutputCancel')|Out-Null
-    AssertDisabledOrGone 'LiveOutputCancel' 'ChatLiveOutput' 'Chat cancel remained enabled after cancellation was requested.'
-    Assert (-not (Enabled 'CancelChat')) 'The chat cancel command remained enabled after cancellation was requested.'
+    Assert (Enabled 'CancelChat') 'Returning to the active request did not enable its cancel button.'
+    UI @('invoke','CancelChat')|Out-Null
+    AssertDisabledOrGone 'CancelChat' '' 'Chat cancel remained enabled after cancellation was requested.'
     $chatCancelled=Wait-HistoryStatus 'cancelled' 'live-output-thread-a'
     Assert ($chatCancelled.workspaceRoot -eq $workspace) 'Chat cancellation history did not belong to the isolated workspace.'
     Assert ((Value 'LiveOutputText' 'ChatLiveOutput').Contains('LIVE_RUN_CHAT_A LIVE_FIXTURE assistant output arrived')) 'Cancelling conversation A discarded its partial live output.'
@@ -256,6 +256,7 @@ try{
     $checks.Add(@{name='Live output remains accessible at 500 DIP in light and dark themes';passed=$true})
 }catch{
     $checks.Add(@{name='Live output UI';passed=$false;detail=$_.Exception.Message})
+    if($appProcess -and -not $appProcess.HasExited){try{Capture "live-output-$Language-failure.png"}catch{}}
     throw
 }finally{
     $checks|ConvertTo-Json -Depth 8|Set-Content -LiteralPath (Join-Path $runRoot 'results.json')

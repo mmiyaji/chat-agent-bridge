@@ -21,6 +21,12 @@ public sealed partial class ChatInboxViewModel
 
     public Func<CancellationToken, Task<bool>>? ConfirmReconnectAsync { get; set; }
 
+    internal void ReportConnectionError(string messageKey)
+    {
+        Status = DesktopText.Get(messageKey);
+        ConnectionError = ConnectionErrorKind.Connection;
+    }
+
     public bool RequiresConnectionChangeConfirmation(BridgeSettings draft) =>
         IsConnected && Requests.Count > 0 && _connectionSettings is { } connected &&
         ConnectionProvider is { } provider && !ChatConnectionPolicy.Matches(provider, draft, connected);
@@ -65,11 +71,7 @@ public sealed partial class ChatInboxViewModel
         catch (OperationCanceledException) when (_closing) { }
         catch (Exception)
         {
-            if (!_closing)
-            {
-                HasConnectionError = true;
-                Status = DesktopText.Get("InboxConnectionFailed");
-            }
+            if (!_closing) ReportConnectionError("InboxConnectionFailed");
         }
         finally { IsConnectionActionInProgress = false; }
     }
@@ -106,11 +108,7 @@ public sealed partial class ChatInboxViewModel
         catch (OperationCanceledException) when (_closing) { }
         catch (Exception)
         {
-            if (!_closing)
-            {
-                HasConnectionError = true;
-                Status = DesktopText.Get("InboxReconnectFailed");
-            }
+            if (!_closing) ReportConnectionError("InboxReconnectFailed");
         }
         finally { IsConnectionActionInProgress = false; }
     }

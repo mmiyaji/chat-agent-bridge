@@ -4,8 +4,20 @@ namespace ChatAgentBridge_Desktop.Inbox;
 
 public sealed partial class InboxItem
 {
+    public string ProviderDisplayName => Request.Provider switch
+    {
+        "mattermost" => "Mattermost",
+        "slack" => "Slack",
+        "discord" => "Discord",
+        _ => Request.Provider
+    };
+    public string RequesterDisplayName => !string.IsNullOrWhiteSpace(UserName) && UserName != Request.UserId
+        ? UserName : DesktopText.Get("InboxUnknownParticipant");
+    public string ResultDestination => DesktopText.Get("InboxResultDestination", ProviderDisplayName);
+
     partial void OnUserNameChanged(string? oldValue, string? newValue)
     {
+        OnPropertyChanged(nameof(RequesterDisplayName));
         var oldOwner = DesktopText.Get("InboxConversationOwner", Presentation.UserIdentityText.Format(oldValue, Request.UserId));
         var newOwner = DesktopText.Get("InboxConversationOwner", UserIdentity);
         SessionLabel = SessionLabel.Replace(oldOwner, newOwner, StringComparison.Ordinal);
@@ -17,6 +29,9 @@ public sealed partial class InboxItem
         OnPropertyChanged(nameof(RequestLabel));
         OnPropertyChanged(nameof(PromptDisplay));
         OnPropertyChanged(nameof(IncomingFilesSummary));
+        OnPropertyChanged(nameof(RequesterDisplayName));
+        OnPropertyChanged(nameof(ResultBodyDelivery));
+        OnPropertyChanged(nameof(ResultDestination));
     }
 
     public string StateTone => State switch
@@ -103,6 +118,19 @@ public sealed partial class InboxConversation
 
 public sealed partial class ChatInboxViewModel
 {
+    public bool ShowRequestPicker => SelectedConversation?.Requests.Count > 1;
+    public string SelectedAgentLabel => Selected is { } item ? AgentDisplayName(item.ApprovalPreviewSettings ?? item.Settings) : "";
+    public string SelectedResultPolicyLabel => Selected is { } item ? ResultLabel((item.ApprovalPreviewSettings ?? item.Settings).ChatResultMode) : "";
+
+    private void NotifySelectedPolicyPresentation()
+    {
+        OnPropertyChanged(nameof(SelectedAgentLabel));
+        OnPropertyChanged(nameof(SelectedResultPolicyLabel));
+        OnPropertyChanged(nameof(SelectedApprovalPolicyHelp));
+        OnPropertyChanged(nameof(SelectedResultPolicyHelp));
+        OnPropertyChanged(nameof(SelectedAttachmentPolicyHelp));
+    }
+
     public string? ConnectionProvider => _transport switch
     {
         ChatAgentBridge.Transports.MattermostWebSocketTransport => "mattermost",
@@ -137,12 +165,15 @@ public sealed partial class ChatInboxViewModel
             Status = DesktopText.Get("InboxDisconnected");
 
         OnPropertyChanged(nameof(ConnectionLabel));
+        OnPropertyChanged(nameof(ConnectionErrorMessage));
+        OnPropertyChanged(nameof(ConnectionErrorActionLabel));
         OnPropertyChanged(nameof(QueueSummary));
         OnPropertyChanged(nameof(ReconnectLabel));
         OnPropertyChanged(nameof(ReconnectHint));
         OnPropertyChanged(nameof(PendingApprovalMessage));
         OnPropertyChanged(nameof(ConversationCountLabel));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
+        NotifySelectedPolicyPresentation();
         OnPropertyChanged(nameof(EmptyListMessage));
         OnPropertyChanged(nameof(EmptyConversationHeading));
         OnPropertyChanged(nameof(EmptyConversationDescription));
@@ -167,6 +198,7 @@ public sealed partial class ChatInboxViewModel
     }
     private void NotifyConnectionPresentation()
     {
+        OnPropertyChanged(nameof(ShowWorkspaceRepairOnly));
         OnPropertyChanged(nameof(ConnectionProvider));
         OnPropertyChanged(nameof(ConnectionOverviewTarget));
         OnPropertyChanged(nameof(ConnectionTone));
@@ -184,5 +216,5 @@ public sealed partial class ChatInboxViewModel
         NotifyConnectionPresentation();
     }
     partial void OnIsConnectionConfirmedChanged(bool value) => NotifyConnectionPresentation();
-    partial void OnHasConnectionErrorChanged(bool value) => NotifyConnectionPresentation();
+    partial void OnConnectionErrorChanged(ConnectionErrorKind value) => NotifyConnectionPresentation();
 }

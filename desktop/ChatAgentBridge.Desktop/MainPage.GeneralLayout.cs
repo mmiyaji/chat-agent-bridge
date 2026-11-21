@@ -5,6 +5,8 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
+    private bool _openingInboxWorkspace;
+
     private async void OpenSettingsFolder_Click(object sender, RoutedEventArgs e)
     {
         var path = ViewModel.SettingsLocation;
@@ -32,6 +34,37 @@ public sealed partial class MainPage
             _agentSettingsScroll?.UpdateLayout();
             WorkspaceRootInput.StartBringIntoView();
         });
+    }
+
+    private async void OpenInboxWorkspaceSettings()
+    {
+        if (_openingInboxWorkspace || !IsChatSelected || !ViewModel.IsSettingsLoaded) return;
+        _openingInboxWorkspace = true;
+        try
+        {
+            if (!await NavigateToPageAsync("agent")) return;
+            InitializeAgentSettingsScope();
+            if (_agentSettingsScope != "common")
+            {
+                await WaitForAgentEditorIdleAsync();
+                if (!IsAgentSelected || !await SelectAgentSettingsScopeAsync("common", preserveSharedDraft: true)) return;
+            }
+            if (!IsAgentSelected) return;
+            _agentScopeInitialized = _agentScopeNavigation is not null;
+
+            ++_scrollResetGeneration;
+            AgentBasicSettings.IsExpanded = true;
+            MainNavigation.UpdateLayout();
+            _agentSettingsScroll?.UpdateLayout();
+            WorkspaceRootInput.StartBringIntoView(new BringIntoViewOptions
+            {
+                VerticalAlignmentRatio = 0.2,
+                AnimationDesired = false
+            });
+            WorkspaceRootInput.Focus(FocusState.Keyboard);
+            await PickWorkspaceAsync();
+        }
+        finally { _openingInboxWorkspace = false; }
     }
 
     private void SetupActions_SizeChanged(object sender, SizeChangedEventArgs e)

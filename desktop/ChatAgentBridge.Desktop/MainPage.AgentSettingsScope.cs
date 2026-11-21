@@ -28,7 +28,7 @@ public sealed partial class MainPage
 
     private void InitializeAgentSettingsScope()
     {
-        if (AgentBasicSettings.Parent is not Panel original ||
+        if (_agentScopeNavigation is not null || AgentBasicSettings.Parent is not Panel original ||
             AgentBasicSettings.Content is not StackPanel basic || basic.Children.FirstOrDefault() is not StackPanel workspace) return;
         original.Children.Clear();
         basic.Children.Remove(workspace);
@@ -191,7 +191,7 @@ public sealed partial class MainPage
         _syncingAgentScope = false;
     }
 
-    private async Task<bool> SelectAgentSettingsScopeAsync(string scope)
+    private async Task<bool> SelectAgentSettingsScopeAsync(string scope, bool preserveSharedDraft = false)
     {
         if (_changingAgentScope || _agentProfileDetails is null || !_agentScopeKeys.Contains(scope)) return false;
         _changingAgentScope = true;
@@ -199,7 +199,8 @@ public sealed partial class MainPage
         var succeeded = false;
         try
         {
-            if (!await ViewModel.SavePendingSettingsAsync() || !await _agentProfileDetails.TryFlushAsync()) return false;
+            if (!preserveSharedDraft && !await ViewModel.SavePendingSettingsAsync()) return false;
+            if (!await _agentProfileDetails.TryFlushAsync()) return false;
             if (scope != "common" && !await _agentProfileDetails.SelectProviderAsync(scope))
             {
                 var editor = _agentProfileDetails.Editor;
@@ -237,7 +238,7 @@ public sealed partial class MainPage
 
     private async Task EnsureAgentSettingsScopeAsync()
     {
-        if (!_agentScopeInitialized && ViewModel.IsSettingsLoaded)
+        if (!_openingInboxWorkspace && !_agentScopeInitialized && ViewModel.IsSettingsLoaded)
             await SelectAgentSettingsScopeAsync(ViewModel.AgentProvider);
     }
 }

@@ -10,12 +10,19 @@ public sealed partial class ChatInboxPage : Page
     public ChatInboxViewModel ViewModel { get; } = new();
     public event Action? OpenRequested;
     public event Action? ConnectionSettingsRequested;
+    public event Action? WorkspaceSettingsRequested;
     private bool _windowClosedSubscribed;
     private bool _openAppCallbackConfigured;
     private bool _searchSuggestionsAllowed;
     private string _lastUserSearchText = "";
 
     private void OpenConnectionSettings_Click(object sender, RoutedEventArgs e) => ConnectionSettingsRequested?.Invoke();
+
+    private void OpenConnectionErrorAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.HasWorkspaceError) WorkspaceSettingsRequested?.Invoke();
+        else ConnectionSettingsRequested?.Invoke();
+    }
 
     private const double MinimumConversationListWidth = ChatAgentBridge.Core.Appearance.LayoutPreferences.MinInboxListWidth;
     private const double MinimumConversationDetailWidth = 360;
@@ -159,6 +166,13 @@ public sealed partial class ChatInboxPage : Page
         wide ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
     public static Microsoft.UI.Xaml.Visibility VisibleWhen(bool value) => value ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
     public static Microsoft.UI.Xaml.Visibility HiddenWhen(bool value) => value ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
+    public static Visibility ChatDescriptionVisibility(bool wide, bool repairOnly) => VisibleWhen(wide && !repairOnly);
+
+    private void InboxFooter_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // Allow room for both localized actions and the approval and sharing help button.
+        InboxCommandBar.Orientation = e.NewSize.Width >= 310 ? Orientation.Horizontal : Orientation.Vertical;
+    }
 
     private void Page_SizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
     {

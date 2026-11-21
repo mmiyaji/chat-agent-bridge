@@ -189,6 +189,8 @@ Everyone with access to the channel can view sent files. Review file contents be
 
 ## Chat operations
 
+The request detail shows the prompt and execution information above the action bar. On a narrow window, open a conversation from the list and use **Back** to return. When a result and generated files are available, review them using their separate actions. For a workspace configuration error, select **Choose working folder** to open the folder picker from the workspace setting.
+
 Actions are tied to the requester and the conversation (channel, thread and user). Posts from other users in the same thread are not treated as part of your conversation.
 
 | Action | Slack | Mattermost | Discord |

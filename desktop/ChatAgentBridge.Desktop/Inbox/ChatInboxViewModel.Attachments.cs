@@ -13,6 +13,7 @@ public sealed partial class ChatInboxViewModel
     private readonly AttachmentFileCollector _attachmentCollector = new();
     private bool _attachmentTransferActive;
     public string SelectedAttachmentStatus => Selected?.AttachmentStatus ?? "";
+    public bool HasSelectedAttachmentStatus => SelectedAttachmentStatus.Length > 0;
     public Func<InboxItem, IReadOnlyList<FileAttachmentCandidate>, bool, CancellationToken,
         Task<IReadOnlyList<FileAttachmentCandidate>?>>? ConfirmAttachmentsAsync { get; set; }
 

@@ -519,15 +519,17 @@ function Run-Scenario([string]$Language, [string]$Theme) {
     Wait-Element 'InboxPendingApprovalsNotice' | Out-Null
     Capture-Window "$Language-$Theme-03a-pending-notice.png"
     Invoke-Element (Wait-Element 'InboxOpenPendingApproval') 'reveal pending request without running it'
-    Wait-Element 'InboxApprovalNotice' | Out-Null
+    Wait-Element 'InboxSelectedState' | Out-Null
     Assert (@(Read-Observations | Where-Object method -eq 'turn/start').Count -eq 0) 'Opening pending approvals started the agent.'
     Select-LiveRequest 'GALLERY_PENDING_SEARCH_TARGET'
     Assert ((Wait-Element 'ApproveChat').Current.IsEnabled) 'Approve is disabled for a live pending request.'
     Assert ((Wait-Element 'ApproveChat').Current.ControlType -eq [Windows.Automation.ControlType]::Button) 'Approve is not a standalone button.'
     Assert ((Wait-Element 'RejectChat').Current.IsEnabled) 'Reject is disabled for a live pending request.'
     Assert-CommandUnavailable 'CancelChat' 'Pending request'
-    foreach($width in @(1040,820,500)) {
+    foreach($width in @(1440,1040,1000,820,700,520,500)) {
         Resize-App $width 600
+        $singleRequestPicker = Find-Element $script:window 'ChatRequests'
+        Assert ($null -eq $singleRequestPicker -or $singleRequestPicker.Current.IsOffscreen) "The request picker is shown for a single request at width $width."
         if($width -eq 500){
             $prompt=Find-Element $script:window 'InboxSelectedPrompt'
             $prompt.SetFocus()
@@ -541,11 +543,12 @@ function Run-Scenario([string]$Language, [string]$Theme) {
             $bounds=(Wait-Element $id).Current.BoundingRectangle
             $windowBounds=$script:window.Current.BoundingRectangle
             Assert ($bounds.Width -gt 0 -and $bounds.Left -ge $windowBounds.Left -and $bounds.Right -le $windowBounds.Right -and $bounds.Top -ge $windowBounds.Top -and $bounds.Bottom -le $windowBounds.Bottom) "Approval action clipped at width $width : $id"
+            Assert ((Wait-Element 'InboxSelectedPrompt').Current.BoundingRectangle.Top -lt $bounds.Top) "The prompt follows the approval action at width $width : $id"
         }
         Capture-Window "$Language-$Theme-03b-pending-$width.png"
     }
     Resize-App 1160 800
-    Add-Check "$script:scenarioName visible pending notice and approval actions at 1040/820/500" 'PASS' 'Reviewing a pending request clears filters, opens details, and never executes it.'
+    Add-Check "$script:scenarioName prompt precedes approval actions at seven widths" 'PASS' 'Reviewing a pending request clears filters, opens details, and never executes it.'
 
     if ($RestoredConversationCount -ge 100) {
         Search-Input 'GALLERY_PENDING_SEARCH_TARGET'
@@ -651,6 +654,11 @@ function Run-Scenario([string]$Language, [string]$Theme) {
         $attachmentStatus = Find-Element $script:window 'SelectedAttachmentStatus'
         $null -ne $attachmentStatus -and -not [string]::IsNullOrWhiteSpace($attachmentStatus.Current.Name)
     } 'synthetic output attachment candidate discovery' 15
+    $sentLabel = if ($Language -eq 'ja') { '送信済み' } else { 'Sent' }
+    Wait-For {
+        $bodyDelivery = Find-Element $script:window 'InboxResultBodyDelivery'
+        $bodyDelivery -and $bodyDelivery.Current.Name -eq $sentLabel
+    } 'automatic result delivery shown separately from attachments' 15
     $directShare = Find-Element $script:window 'SendChatResult'
     Assert ($directShare -and -not $directShare.Current.IsOffscreen -and $directShare.Current.BoundingRectangle.Width -gt 0) 'Result sharing is hidden in the overflow menu.'
     $resultButton = Ensure-Command 'SendChatResult'
@@ -660,6 +668,17 @@ function Run-Scenario([string]$Language, [string]$Theme) {
     $attachmentButton = Ensure-Command 'SendChatAttachments'
     Assert (-not $resultButton.Current.IsOffscreen -and $resultButton.Current.BoundingRectangle.Width -gt 0) 'Result sharing command is not visible in completed details.'
     Assert (-not $attachmentButton.Current.IsOffscreen -and $attachmentButton.Current.BoundingRectangle.Width -gt 0) 'Attachment command is not visible in completed details.'
+    foreach($width in @(1040,820,500)) {
+        Resize-App $width 600
+        foreach($id in @('SendChatResult','SendChatAttachments')) {
+            $action = Find-Element $script:window $id
+            Assert ($action -and -not $action.Current.IsOffscreen -and $action.Current.BoundingRectangle.Width -gt 0) "Sharing action is hidden at width $width : $id"
+        }
+        Capture-Window "$Language-$Theme-05-completed-$width.png"
+    }
+    Resize-App 1160 800
+    $resultButton = Wait-Element 'SendChatResult'
+    $attachmentButton = Wait-Element 'SendChatAttachments'
     $liveAvatar = Find-Element $script:window 'InboxSelectedPersonPicture'
     if (-not $liveAvatar) { $liveAvatar = Find-RawDescendant $script:window 'InboxSelectedPersonPicture' }
     if (-not $liveAvatar) { throw 'Live detail PersonPicture was not discoverable by AutomationId in either control or raw UIA views.' }

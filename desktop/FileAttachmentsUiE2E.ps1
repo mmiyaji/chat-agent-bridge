@@ -200,8 +200,13 @@ function Select-FirstRow([string]$Id) {
     $row.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
 }
 function Select-Request([string]$Text) {
+    $prompt=Wait-Element 'InboxSelectedPrompt'
     $combo=Element 'ChatRequests'
-    Assert-True ($null -ne $combo) 'Request picker is missing'
+    if (-not $combo -or $combo.Current.IsOffscreen) {
+        Assert-True (-not $prompt.Current.IsOffscreen) 'The selected request prompt is not visible'
+        UI @('wait-for','InboxSelectedPrompt','--value',$Text,'--contains','-t','5000') | Out-Null
+        return
+    }
     $expand=$combo.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
     $expand.Expand(); Start-Sleep -Milliseconds 150
     $items=[System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Descendants,
@@ -211,6 +216,7 @@ function Select-Request([string]$Text) {
     Assert-True ($null -ne $match) "Could not find request '$Text'"
     $match.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
     $expand.Collapse(); Start-Sleep -Milliseconds 180
+    UI @('wait-for','InboxSelectedPrompt','--value',$Text,'--contains','-t','5000') | Out-Null
 }
 function Set-Value([string]$Id,[string]$Text) {
     UI @('set-value',$Id,$Text) | Out-Null
@@ -298,7 +304,6 @@ function Select-ConversationRequest([string]$Prompt) {
     Navigate 'NavChat'
     Set-InboxSearch $Prompt
     Select-FirstRow 'InboxConversations'
-    Wait-Element 'ChatRequests' | Out-Null
     Select-Request $Prompt
     UI @('wait-for','ApproveChat','-p','IsEnabled','--value','True','-t','5000') | Out-Null
 }
@@ -311,7 +316,6 @@ function Run-Request([string]$Id,[string]$Filename,[switch]$ExpectAutomaticAttac
     UI @('invoke','PrimaryButton') | Out-Null
     UI @('wait-for','ChatOutput','--value',"Created $Filename",'--contains','-t','12000') | Out-Null
     if (-not $ExpectAutomaticAttachment) {
-        Show-RequestAction 'SendChatAttachments'
         UI @('wait-for','SendChatAttachments','-p','IsEnabled','--value','True','-t','6000') | Out-Null
     }
 }
@@ -327,20 +331,7 @@ function Wait-Notice([string]$Fragment) {
     $prefix=$(if($Language -eq 'ja'){'添付ファイルを送れませんでした'}else{'Could not send attachments'})
     return Wait-Server { param($s) @($s.replies|Where-Object { $_.root_id -eq 'attachments-thread' -and "$($_.message)".StartsWith($prefix) -and "$($_.message)".Contains($Fragment) }).Count -ge 1 }
 }
-# Sending attachments is a secondary command in the request command bar, shown only after opening its "..." menu.
-function Show-RequestAction([string]$Id) {
-    $element = Element $Id
-    if (-not $element -or $element.Current.IsOffscreen) {
-        $bar = Wait-Element 'InboxCommandBar'
-        $more = $bar.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
-            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,'MoreButton'))
-        if ($null -eq $more) { throw 'The request command bar has no overflow button.' }
-        $more.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-        UI @('wait-for',$Id,'-t','4000') | Out-Null
-    }
-}
 function Open-AttachmentDialog {
-    Show-RequestAction 'SendChatAttachments'
     Invoke-AvailableAction 'SendChatAttachments'
     Wait-Element 'AttachmentConfirmation' | Out-Null
     Wait-Element 'AttachmentFile1' | Out-Null
@@ -721,9 +712,7 @@ try {
         Navigate 'NavChat'
         Set-InboxSearch $prompt
         Select-FirstRow 'InboxConversations'
-        Wait-Element 'ChatRequests' | Out-Null
         Select-Request $prompt
-        Show-RequestAction 'SendChatAttachments'
         Invoke-AvailableAction 'SendChatAttachments'
         $changed=$(if($Language -eq 'ja'){'添付設定が変更されました'}else{'Attachment settings changed'})
         UI @('wait-for','SelectedAttachmentStatus','--value',$changed,'--contains','-t','6000') | Out-Null

@@ -54,15 +54,20 @@ function Get-CabProcess {
     $script:cabProcess
 }
 function Get-CabWindow { [Windows.Automation.AutomationElement]::FromHandle((Get-CabProcess).MainWindowHandle) }
-function Find-Cab([string]$Id, [int]$TimeoutSec = 10) {
-    $c = New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::AutomationIdProperty, $Id)
+function Find-Cab([string[]]$Id, [int]$TimeoutSec = 10) {
+    $conditions = foreach ($automationId in $Id) {
+        New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::AutomationIdProperty, $automationId)
+    }
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     do {
-        $e = (Get-CabWindow).FindFirst('Descendants', $c)
-        if ($e -and -not $e.Current.IsOffscreen) { return $e }
+        $window = Get-CabWindow
+        foreach ($condition in $conditions) {
+            $e = $window.FindFirst('Descendants', $condition)
+            if ($e -and -not $e.Current.IsOffscreen) { return $e }
+        }
         Start-Sleep -Milliseconds 300
     } while ((Get-Date) -lt $deadline)
-    throw "CAB element $Id not found."
+    throw "CAB element $($Id -join ' or ') not found."
 }
 # Moves the visible cursor onto the element, then activates it through UI Automation (no synthetic keys or clicks).
 function Invoke-Cab([string]$Id, [int]$TimeoutSec = 10) {
@@ -90,16 +95,17 @@ function Click-CabButtonByName([string]$Name, [int]$TimeoutSec = 10) {
     Click-CabUnderCursor
 }
 
-# Opens the conversation's request list and clicks the request that waits for approval.
+# Waits for the selected request's approval or uses the picker to select a pending request.
 function Select-CabPendingRequest([int]$TimeoutSec = 20) {
-    $combo = Find-Cab 'ChatRequests' 5
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    try { $combo = Find-Cab @('ApproveChat', 'ChatRequests') $TimeoutSec } catch { return $false }
+    if ($combo.Current.AutomationId -eq 'ApproveChat') { return $true }
     $c = New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem)
     $expand = $combo.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
     $r = $combo.Current.BoundingRectangle
     Move-Cursor ($r.X + $r.Width / 2) ($r.Y + $r.Height / 2)
     Start-Sleep -Milliseconds 300
     # Items exist in the automation tree only while the drop-down is open.
-    $deadline = (Get-Date).AddSeconds($TimeoutSec)
     $pending = $null
     while (-not $pending -and (Get-Date) -lt $deadline) {
         $expand.Expand()

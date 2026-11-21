@@ -133,6 +133,7 @@ public sealed partial class MainPage : Page
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
         InboxPage.ConnectionSettingsRequested += () => OpenConnections_Click(this, new RoutedEventArgs());
+        InboxPage.WorkspaceSettingsRequested += OpenInboxWorkspaceSettings;
         ViewModel.OnboardingNavigateRequested += _ => _wizard.ResetScroll();
         // Search is a command row, so keep General as the initial selected page.
         MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
@@ -534,7 +535,9 @@ public sealed partial class MainPage : Page
         DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
     }
 
-    private async void BrowseWorkspace_Click(object sender, RoutedEventArgs e)
+    private async void BrowseWorkspace_Click(object sender, RoutedEventArgs e) => await PickWorkspaceAsync();
+
+    private async Task PickWorkspaceAsync()
     {
         try
         {

@@ -1,5 +1,4 @@
 using ChatAgentBridge.Core;
-using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop;
 
@@ -66,11 +65,7 @@ public sealed partial class MainPage
         {
             // Keep recovery failures in the Inbox's existing connection error presentation.
             var inbox = InboxPage.ViewModel;
-            if (!inbox.IsConnected)
-            {
-                inbox.HasConnectionError = true;
-                inbox.Status = DesktopText.Get("InboxReconnectFailed");
-            }
+            if (!inbox.IsConnected) inbox.ReportConnectionError("InboxReconnectFailed");
         }
         finally
         {

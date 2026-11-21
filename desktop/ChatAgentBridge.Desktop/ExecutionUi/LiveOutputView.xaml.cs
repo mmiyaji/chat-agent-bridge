@@ -60,6 +60,7 @@ public sealed partial class LiveOutputView : UserControl
     public static Visibility ShowCancellationPending(bool active, bool cancellationPending) =>
         active && cancellationPending ? Visibility.Visible : Visibility.Collapsed;
     public static Visibility ShowWhenNot(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
+    public static Visibility ShowCancel(bool active, ICommand? command) => ShowWhenSingle(active && command is not null);
 
     private static void ViewModelChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
     {

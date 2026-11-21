@@ -512,7 +512,8 @@
   <data name="InboxPersistenceSaveFailed" xml:space="preserve"><value>会話一覧を保存できませんでした。次回起動時に復元されない可能性があります。</value></data>
   <data name="InboxPersistenceSomeRowsRejected" xml:space="preserve"><value>会話情報が不正なため、{0}件を保存できませんでした。他の会話は保存しました。作業フォルダーなどの設定を確認してください。</value></data>
   <data name="InboxPersistenceAllRowsRejected" xml:space="preserve"><value>会話情報が不正なため、{0}件を保存できませんでした。既存の保存データは上書きしていません。作業フォルダーなどの設定を確認してください。</value></data>
-  <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>作業フォルダーの設定が不正です。エージェント設定で、存在するフォルダーの絶対パスを選択してください。</value></data>
+  <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>作業フォルダーを確認してください。設定するまで依頼を受信できません。</value></data>
+  <data name="InboxChooseWorkingFolder" xml:space="preserve"><value>作業フォルダーを選ぶ</value></data>
   <data name="InboxInterrupted" xml:space="preserve"><value>中断</value></data>
   <data name="InboxRestoredIdle" xml:space="preserve"><value>復元済み・待機中</value></data>
   <data name="InboxClearFiltersLabel" xml:space="preserve"><value>絞り込みを解除</value></data>
@@ -992,6 +993,9 @@
   <data name="DiscordInboxPermissionsRequired" xml:space="preserve"><value>DiscordのBot権限を確認してください。チャンネルを見る・メッセージを送信・メッセージ履歴を読む・公開スレッドを作成・スレッドで送信・ファイルを添付が必要です。</value></data>
   <data name="InboxApprovalPolicyHelp" xml:space="preserve"><value>実行の承認: {0}。{1}。</value></data>
   <data name="InboxResultPolicyHelp" xml:space="preserve"><value>結果の共有: {0}。{1}。</value></data>
+  <data name="InboxResultBodySent" xml:space="preserve"><value>送信済み</value></data>
+  <data name="InboxResultBodyPending" xml:space="preserve"><value>未送信</value></data>
+  <data name="InboxResultDestination" xml:space="preserve"><value>{0} · 元のスレッド</value></data>
   <data name="InboxAttachmentPolicyHelp" xml:space="preserve"><value>ファイルの承認: {0}。実行や結果の共有とは別の設定で、必要な場合は個別に確認します。結果を共有しない設定の場合、添付ファイルも送信できません。</value></data>
   <data name="InboxEffectivePolicy" xml:space="preserve"><value>この依頼に適用される設定</value></data>
   <data name="InboxConfiguredPolicy" xml:space="preserve"><value>現在の設定。会話ごとの上書きは実行前に反映されます</value></data>

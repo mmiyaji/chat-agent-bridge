@@ -24,6 +24,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public IChatTransport Transport { get; } = transport;
     public BridgeSettings Settings { get; } = settings;
     public BridgeSettings? EffectiveSettings { get; set; }
+    [ObservableProperty] internal partial BridgeSettings? ApprovalPreviewSettings { get; set; }
     [ObservableProperty, NotifyPropertyChangedFor(nameof(Source)), NotifyPropertyChangedFor(nameof(UserIdentity))]
     public partial string? UserName { get; set; } = request.UserDisplayName;
     public string UserIdentity => Presentation.UserIdentityText.Format(UserName, Request.UserId);
@@ -37,7 +38,9 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     internal string ListPrompt { get; } = InboxListPrompt.Get(request.Text);
     public DateTimeOffset ReceivedAt { get; } = DateTimeOffset.Now;
     [ObservableProperty] public partial string Workspace { get; set; } = settings.WorkspaceRoot;
-    [ObservableProperty] public partial string State { get; set; } = "承認待ち";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowExecutionResult))]
+    public partial string State { get; set; } = "承認待ち";
+    public bool ShowExecutionResult => State is not ("承認待ち" or "実行中" or "自動実行を準備");
     public string StateDisplay => State switch
     {
         "承認待ち" => DesktopText.Get("ApprovalPending"),
@@ -71,14 +74,23 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     }
     public string RequestLabel => $"{ReceivedAt:t} · {StateDisplay} · {Prompt.Replace('\r', ' ').Replace('\n', ' ')[..Math.Min(Prompt.Length, 80)]}";
     [ObservableProperty] public partial string SessionLabel { get; set; } = DesktopText.Get("InboxSessionPreflight");
-    [ObservableProperty] public partial string ResultText { get; set; } = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowShareResultAction))]
+    public partial string ResultText { get; set; } = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ResultBodyDelivery))]
+    public partial bool IsResultBodySent { get; set; }
     [ObservableProperty] public partial string FullOutput { get; set; } = DesktopText.Get("InboxOutputIntro");
     [ObservableProperty] public partial string Usage { get; set; } = DesktopText.Get("UsageAfterExecution");
     public ExecutionUi.LiveOutputViewModel LiveOutput { get; } = new();
     public Guid? ExecutionId { get; set; }
     public string? ExecutionPolicyFingerprint { get; set; }
-    public bool AllowsResultSharing { get; set; } = true;
-    public IReadOnlyList<FileAttachmentCandidate> AttachmentCandidates { get; set; } = [];
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ResultBodyDelivery), nameof(ShowShareResultAction), nameof(ShowAttachmentsAction))]
+    public partial bool AllowsResultSharing { get; set; } = true;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowAttachmentsAction))]
+    public partial IReadOnlyList<FileAttachmentCandidate> AttachmentCandidates { get; set; } = [];
+    public bool ShowShareResultAction => AllowsResultSharing && ResultText.Length > 0;
+    public bool ShowAttachmentsAction => AllowsResultSharing && AttachmentCandidates.Count > 0;
+    public string ResultBodyDelivery => DesktopText.Get(IsResultBodySent ? "InboxResultBodySent"
+        : AllowsResultSharing ? "InboxResultBodyPending" : "NoSharing");
     public BridgeSettings? AttachmentSettingsAtStart { get; set; }
     public string? AttachmentSessionId { get; set; }
     public bool AttachmentScanComplete { get; set; }
@@ -198,7 +210,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public event Action<InboxItem>? RequestReceived;
     public event Action? ConnectionEnded;
     [ObservableProperty] public partial string NotificationStatus { get; set; } = "";
-    [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("InboxDisconnected");
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ConnectionErrorMessage), nameof(ConnectionSummaryStatus))]
+    public partial string Status { get; set; } = DesktopText.Get("InboxDisconnected");
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasOverflowNotice))] public partial string OverflowNotice { get; set; } = "";
     public bool HasOverflowNotice => !string.IsNullOrWhiteSpace(OverflowNotice);
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasProgressNotice))]
@@ -208,7 +221,17 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public partial bool IsConnected { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnectionConfirmed { get; set; }
-    [ObservableProperty] public partial bool HasConnectionError { get; set; }
+    private enum ConnectionErrorKind { None, Connection, Workspace }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConnectionError), nameof(ConnectionErrorMessage),
+        nameof(ConnectionErrorActionLabel), nameof(ConnectionSummaryStatus), nameof(ShowConnectionSummaryStatus))]
+    private partial ConnectionErrorKind ConnectionError { get; set; }
+    public bool HasConnectionError => ConnectionError != ConnectionErrorKind.None;
+    public bool HasWorkspaceError => ConnectionError == ConnectionErrorKind.Workspace;
+    public bool ShowWorkspaceRepairOnly => HasWorkspaceError && !IsConnected && Conversations.Count == 0;
+    public string ConnectionErrorMessage => HasWorkspaceError ? DesktopText.Get("InboxWorkspaceInvalid") : Status;
+    public string ConnectionErrorActionLabel => HasWorkspaceError ? DesktopText.Get("InboxChooseWorkingFolder") : MrtText.Get("InboxOpenConnectionSettings.Content");
+    public bool ShowConnectionSummaryStatus => !HasWorkspaceError;
+    public string ConnectionSummaryStatus => ShowConnectionSummaryStatus ? Status : "";
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasKeepAwakeWork)), NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsExecuting { get; set; }
     partial void OnIsExecutingChanged(bool value)
@@ -294,12 +317,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowPendingApprovalNotice));
         OnPropertyChanged(nameof(IsSelectedPending));
         OnPropertyChanged(nameof(IsSelectedActiveExecution));
-        OnPropertyChanged(nameof(SelectedApprovalPolicyHelp));
-        OnPropertyChanged(nameof(SelectedResultPolicyHelp));
-        OnPropertyChanged(nameof(SelectedAttachmentPolicyHelp));
+        NotifySelectedPolicyPresentation();
         NotifyRestoredSelection();
         OnPropertyChanged(nameof(SelectedLiveOutput));
         OnPropertyChanged(nameof(SelectedAttachmentStatus));
+        OnPropertyChanged(nameof(HasSelectedAttachmentStatus));
         SendAttachmentsCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(SelectedOutput));
         OnPropertyChanged(nameof(SelectedUsage));
@@ -312,6 +334,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         _ = EnsureAvatarAsync(value);
         OnPropertyChanged(nameof(ConversationRequests));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
+        OnPropertyChanged(nameof(ShowRequestPicker));
         OnPropertyChanged(nameof(HasSelectedConversation));
         NotifyRestoredSelection();
         if (value is not null && (Selected is null || !value.Requests.Contains(Selected))) Selected = PreferredRequest(value);
@@ -478,11 +501,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private string GetSelectedPolicyHelp(string resourceKey, string modeProperty)
     {
-        var settings = Selected?.EffectiveSettings ?? Selected?.Settings;
+        var resolved = IsSelectedPending ? Selected?.ApprovalPreviewSettings : Selected?.EffectiveSettings;
+        var settings = resolved ?? Selected?.Settings;
         var mode = settings is null ? null : modeProperty == "ChatApprovalMode"
             ? settings.ChatApprovalMode : modeProperty == "ChatResultMode"
                 ? settings.ChatResultMode : settings.FileAttachmentApprovalMode;
-        var effective = Selected?.EffectiveSettings is not null;
+        var effective = resolved is not null;
         var label = modeProperty == "ChatApprovalMode"
             ? mode switch { "auto" => DesktopText.Get("Auto"), "first" => DesktopText.Get("InboxApprovalFirstLabel"), _ => DesktopText.Get("EveryTime") }
             : modeProperty == "ChatResultMode"
@@ -524,6 +548,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(ConversationCountLabel));
         OnPropertyChanged(nameof(HasVisibleConversations));
+        OnPropertyChanged(nameof(ShowWorkspaceRepairOnly));
         OnPropertyChanged(nameof(EmptyListMessage));
         OnPropertyChanged(nameof(HasConversationFilters));
         OnPropertyChanged(nameof(ShowEmptyConversationList));
@@ -627,6 +652,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         OnPropertyChanged(nameof(QueueSummary));
         OnPropertyChanged(nameof(ConversationRequests));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
+        OnPropertyChanged(nameof(ShowRequestPicker));
         if (SelectedConversation is not null && !Conversations.Contains(SelectedConversation))
         {
             SelectedConversation = null; Selected = null; IsDetailOpen = false;
@@ -688,18 +714,17 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     if (ReferenceEquals(item, Selected))
                     {
                         if (args.PropertyName == nameof(InboxItem.ResultText)) OnPropertyChanged(nameof(HasSelectedResult));
-                        if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.SessionLabel))
+                        if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.SessionLabel) or nameof(InboxItem.ApprovalPreviewSettings))
                         {
                             OnPropertyChanged(nameof(IsSelectedPending));
-                            OnPropertyChanged(nameof(SelectedApprovalPolicyHelp));
-                            OnPropertyChanged(nameof(SelectedResultPolicyHelp));
-                            OnPropertyChanged(nameof(SelectedAttachmentPolicyHelp));
+                            NotifySelectedPolicyPresentation();
                         }
                         if (args.PropertyName == nameof(InboxItem.FullOutput)) OnPropertyChanged(nameof(SelectedOutput));
                         if (args.PropertyName == nameof(InboxItem.Usage)) OnPropertyChanged(nameof(SelectedUsage));
                         if (args.PropertyName == nameof(InboxItem.AttachmentStatus))
                         {
                             OnPropertyChanged(nameof(SelectedAttachmentStatus));
+                            OnPropertyChanged(nameof(HasSelectedAttachmentStatus));
                             SendAttachmentsCommand.NotifyCanExecuteChanged();
                         }
                     }
@@ -751,7 +776,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private async Task ConnectAsync(IChatTransport transport)
     {
         if (IsConnected || _closing) { await transport.DisposeAsync(); return; }
-        HasConnectionError = false;
+        ConnectionError = ConnectionErrorKind.None;
         ProgressNotice = "";
         IsConnected = true;
         _disconnecting = false;
@@ -775,8 +800,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 await transport.DisposeAsync();
                 IsConnected = false;
-                Status = DesktopText.Get("DiscordInboxConfigurationMissing");
-                HasConnectionError = true;
+                ReportConnectionError("DiscordInboxConfigurationMissing");
                 return;
             }
             Volatile.Write(ref _accessSettings, settings);
@@ -788,8 +812,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 await transport.DisposeAsync();
                 IsConnected = false;
-                Status = DesktopText.Get("InboxWorkspaceInvalid");
-                HasConnectionError = true;
+                SetWorkspaceError();
                 return;
             }
             // Reconnection invalidates pending work from the previous connection.
@@ -811,8 +834,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (Exception)
         {
             await transport.DisposeAsync();
-            Status = DesktopText.Get("InboxConnectionFailed");
-            HasConnectionError = true;
+            ReportConnectionError("InboxConnectionFailed");
             IsConnectionConfirmed = false;
             IsConnected = false;
         }
@@ -834,13 +856,21 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     System.Security.Cryptography.CryptographicException or ArgumentException or FormatException)
                 {
                     Volatile.Write(ref _accessSettings, null);
-                    App.DispatcherQueue.TryEnqueue(() => { HasConnectionError = true; Status = DesktopText.Get("InboxPermissionsUnavailable"); });
+                    App.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (!ReferenceEquals(_connection, connection) || cancellationToken.IsCancellationRequested) return;
+                        ReportConnectionError("InboxPermissionsUnavailable");
+                    });
                     return;
                 }
                 if (!IsValidInboxWorkspacePath(accessSettings.WorkspaceRoot))
                 {
                     Volatile.Write(ref _accessSettings, null);
-                    App.DispatcherQueue.TryEnqueue(ReportInvalidWorkspaceSettings);
+                    App.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (ReferenceEquals(_connection, connection) && !cancellationToken.IsCancellationRequested &&
+                            Volatile.Read(ref _accessSettings) is null) ReportInvalidWorkspaceSettings();
+                    });
                     return;
                 }
                 Volatile.Write(ref _accessSettings, accessSettings);
@@ -876,12 +906,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await await completion.Task;
             }, cancellationToken);
             Status = DesktopText.Get("InboxConnectionEnded");
-            HasConnectionError = !_disconnecting && !_closing && !cancellationToken.IsCancellationRequested;
+            ConnectionError = !_disconnecting && !_closing && !cancellationToken.IsCancellationRequested
+                ? ConnectionErrorKind.Connection : ConnectionErrorKind.None;
         }
         catch (OperationCanceledException) { Status = DesktopText.Get("InboxDisconnectedNotice"); }
         catch (DiscordConfigurationException error)
         {
-            Status = DesktopText.Get(error.Code switch
+            ReportConnectionError(error.Code switch
             {
                 "missing_configuration" => "DiscordInboxConfigurationMissing",
                 "authentication" => "DiscordInboxAuthenticationFailed",
@@ -889,13 +920,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 "missing_permissions" => "DiscordInboxPermissionsRequired",
                 _ => "InboxReconnectFailed"
             });
-            HasConnectionError = true;
         }
         catch (Exception)
         {
             // Provider error payloads can contain tokens or socket URLs.
-            Status = DesktopText.Get("InboxReconnectFailed");
-            HasConnectionError = true;
+            ReportConnectionError("InboxReconnectFailed");
         }
         finally
         {
@@ -940,11 +969,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         try { await DisconnectCoreAsync(); }
         catch (Exception)
         {
-            if (!_closing)
-            {
-                HasConnectionError = true;
-                Status = DesktopText.Get("InboxDisconnectFailed");
-            }
+            if (!_closing) ReportConnectionError("InboxDisconnectFailed");
         }
         finally { IsConnectionActionInProgress = false; }
     }
@@ -954,7 +979,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         var connection = _connection;
         var receive = _receiveTask;
         _disconnecting = true;
-        HasConnectionError = false;
+        ConnectionError = ConnectionErrorKind.None;
         var wasConfirmed = IsConnectionConfirmed;
         IsConnectionConfirmed = false;
         if (_transport is { } closingTransport)
@@ -1018,6 +1043,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var workspaceSettings = await _sessions.ApplyWorkspaceAsync(key, await _store.LoadAsync(token), token);
             var effectiveSettings = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
             item.EffectiveSettings = effectiveSettings;
+            item.ApprovalPreviewSettings = effectiveSettings;
             item.Workspace = effectiveSettings.WorkspaceRoot;
             if (!ExecutionPolicy.IsWorkspaceTrusted(effectiveSettings, effectiveSettings.WorkspaceRoot))
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceOutsideTrustedRootsShort"));
@@ -1162,6 +1188,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (result.Success && effectiveSettings.ChatResultMode == "auto" && item.ResultText.Length > 0)
                 {
                     await item.Transport.ReplyAsync(item.Request, BoundedReply(item.ResultText), token);
+                    item.IsResultBodySent = true;
                     await AuditAsync("reply_sent", item.Request, record.Id, token);
                     Status = DesktopText.Get("InboxResultAutoShared");
                 }
@@ -1350,6 +1377,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (ConfirmReplyAsync is null || !await ConfirmReplyAsync(item, text) || token.IsCancellationRequested) return;
             if (!await CheckAccessAsync(item, token)) return;
             await item.Transport.ReplyAsync(item.Request, text, token);
+            item.IsResultBodySent = true;
             await AuditAsync("reply_sent", item.Request, item.ExecutionId);
             Status = DesktopText.Get("InboxResultSent");
         }
@@ -1458,13 +1486,20 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             var settings = await _store.LoadAsync();
             SetConnectReadiness(settings);
-            if (!IsValidInboxWorkspacePath(settings.WorkspaceRoot))
+            if (!IsValidInboxWorkspacePath(settings.WorkspaceRoot) ||
+                HasWorkspaceError && !await Task.Run(() => Directory.Exists(settings.WorkspaceRoot)))
             {
                 ReportInvalidWorkspaceSettings();
                 return;
             }
             var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
+            if (HasWorkspaceError)
+            {
+                Status = DesktopText.Get(IsConnectionConfirmed ? "InboxConnectedWaiting" :
+                    IsConnected ? "InboxConnectingWaiting" : "InboxDisconnected");
+                ConnectionError = ConnectionErrorKind.None;
+            }
             if (previous is not null && SettingsAuditChanges.Describe(previous, settings) is { Count: > 0 } changes)
                 await AuditAppEventAsync("settings_changed", string.Join(',', changes));
             if (_transport is IChatLiveAccessSettings live) live.UpdateAccessSettings(settings);
@@ -1485,8 +1520,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 IsConnectionConfirmed = false;
                 _disconnectDetail = AuditCodes.DisconnectedSettingsChanged;
                 await DisconnectCoreAsync();
-                HasConnectionError = true;
-                Status = DesktopText.Get("InboxConnectionSettingsChanged");
+                ReportConnectionError("InboxConnectionSettingsChanged");
                 _pendingSettingsReconnect = provider;
             }
             else if (IsConnected && previous is not null && !SameExecutionDefaults(previous, settings))
@@ -1498,8 +1532,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             Volatile.Write(ref _accessSettings, null);
             RequestExecutionCancellation(CancellationReasons.SettingsUnavailable);
             foreach (var item in Requests) { if (item.State == "承認待ち") item.State = "許可設定を確認できず実行不可"; item.ResultText = ""; }
-            Status = DesktopText.Get("InboxPermissionsUnavailable");
-            HasConnectionError = true;
+            ReportConnectionError("InboxPermissionsUnavailable");
         }
         finally { _accessRefreshGate.Release(); }
         _ = TryReconnectAfterSettingsChangeAsync();
@@ -1653,6 +1686,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 var key = CreateSessionKey(item);
                 var binding = await _sessions.FindExecutionBindingAsync(key);
                 var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, await _store.LoadAsync()), binding);
+                item.ApprovalPreviewSettings = effective;
                 item.Workspace = effective.WorkspaceRoot;
                 if (await _sessions.CheckApprovalAsync(key, effective, binding, switchCommand: switchesConversation) is { Required: true } check)
                 {

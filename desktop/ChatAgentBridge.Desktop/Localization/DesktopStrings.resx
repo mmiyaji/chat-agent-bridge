@@ -513,7 +513,8 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="InboxPersistenceSaveFailed" xml:space="preserve"><value>The conversation list could not be saved. It may not be restored the next time the app starts.</value></data>
   <data name="InboxPersistenceSomeRowsRejected" xml:space="preserve"><value>{0} conversations could not be saved because their metadata is invalid. Other conversations were saved. Check the working folder and related settings.</value></data>
   <data name="InboxPersistenceAllRowsRejected" xml:space="preserve"><value>{0} conversations could not be saved because their metadata is invalid. Existing saved data was not overwritten. Check the working folder and related settings.</value></data>
-  <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>The working folder setting is invalid. In Agent settings, select an existing folder using its full absolute path.</value></data>
+  <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>Check the working folder. Chat requests can't be received until a folder is set.</value></data>
+  <data name="InboxChooseWorkingFolder" xml:space="preserve"><value>Choose working folder</value></data>
   <data name="InboxInterrupted" xml:space="preserve"><value>Interrupted</value></data>
   <data name="InboxRestoredIdle" xml:space="preserve"><value>Restored · idle</value></data>
   <data name="InboxClearFiltersLabel" xml:space="preserve"><value>Clear filters</value></data>
@@ -989,6 +990,9 @@ After: {2}</value></data>
   <data name="DiscordInboxPermissionsRequired" xml:space="preserve"><value>Check the Discord bot permissions: View Channel, Send Messages, Read Message History, Create Public Threads, Send Messages in Threads, and Attach Files.</value></data>
   <data name="InboxApprovalPolicyHelp" xml:space="preserve"><value>Execution approval: {0}. {1} for this request.</value></data>
   <data name="InboxResultPolicyHelp" xml:space="preserve"><value>Result sharing: {0}. {1} for this request.</value></data>
+  <data name="InboxResultBodySent" xml:space="preserve"><value>Sent</value></data>
+  <data name="InboxResultBodyPending" xml:space="preserve"><value>Not sent</value></data>
+  <data name="InboxResultDestination" xml:space="preserve"><value>{0} · Original thread</value></data>
   <data name="InboxAttachmentPolicyHelp" xml:space="preserve"><value>File approval: {0}. This is separate from execution and result approval; a confirmation is shown when this policy requires one. When result sharing is set to no sharing, attachments are blocked too.</value></data>
   <data name="InboxEffectivePolicy" xml:space="preserve"><value>Effective settings</value></data>
   <data name="InboxConfiguredPolicy" xml:space="preserve"><value>Current configured settings; conversation overrides are resolved before execution</value></data>

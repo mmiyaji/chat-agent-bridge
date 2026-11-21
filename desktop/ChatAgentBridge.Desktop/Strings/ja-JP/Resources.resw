@@ -937,6 +937,13 @@
   <data name="InboxRequestLabel.Text" xml:space="preserve"><value>依頼</value></data>
   <data name="InboxRequestPicker.PlaceholderText" xml:space="preserve"><value>依頼を選択</value></data>
   <data name="InboxPromptLabel.Text" xml:space="preserve"><value>依頼内容</value></data>
+  <data name="InboxExecutionConditions.Text" xml:space="preserve"><value>実行条件</value></data>
+  <data name="InboxExecutionAgent.Text" xml:space="preserve"><value>エージェント</value></data>
+  <data name="InboxExecutionWorkspace.Text" xml:space="preserve"><value>作業フォルダー</value></data>
+  <data name="InboxExecutionResultPolicy.Text" xml:space="preserve"><value>結果の共有</value></data>
+  <data name="InboxResultBodyLabel.Text" xml:space="preserve"><value>結果本文</value></data>
+  <data name="InboxResultAttachmentsLabel.Text" xml:space="preserve"><value>添付</value></data>
+  <data name="InboxResultDestinationLabel.Text" xml:space="preserve"><value>送信先</value></data>
   <data name="InboxContextLabel.Text" xml:space="preserve"><value>実行先と会話情報</value></data>
   <data name="InboxResultLabel.Text" xml:space="preserve"><value>実行結果</value></data>
   <data name="InboxApprove.Content" xml:space="preserve"><value>承認して実行</value></data>
@@ -944,10 +951,10 @@
   <data name="InboxReject.Content" xml:space="preserve"><value>拒否</value></data>
   <data name="InboxRejectBar.Label" xml:space="preserve"><value>拒否</value></data>
   <data name="InboxStop.Content" xml:space="preserve"><value>停止</value></data>
-  <data name="InboxStopBar.Label" xml:space="preserve"><value>実行を停止</value></data>
+  <data name="InboxStopBar.Content" xml:space="preserve"><value>実行を停止</value></data>
   <data name="InboxShare.Content" xml:space="preserve"><value>結果を共有</value></data>
-  <data name="InboxShareBar.Label" xml:space="preserve"><value>結果を共有</value></data>
-  <data name="InboxAttachmentsBar.Label" xml:space="preserve"><value>ファイルを確認して送信</value></data>
+  <data name="InboxShareBar.Content" xml:space="preserve"><value>結果を共有</value></data>
+  <data name="InboxAttachmentsBar.Content" xml:space="preserve"><value>ファイルを確認</value></data>
   <data name="InboxApprovalHelpButton.AutomationProperties.Name" xml:space="preserve"><value>承認と共有の説明</value></data>
   <data name="InboxApprovalHelpTip.Title" xml:space="preserve"><value>承認とファイル共有</value></data>
   <data name="InboxApprovalHelpTip.Subtitle" xml:space="preserve"><value>選択中の依頼では、権限を個別に確認します。</value></data>

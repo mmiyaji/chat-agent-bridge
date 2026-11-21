@@ -44,10 +44,15 @@ public sealed partial class ChatInboxViewModel
         RequestExecutionCancellation(CancellationReasons.SettingsUnavailable);
         foreach (var item in Requests.Where(item => item.State == "承認待ち"))
             item.State = "許可設定を確認できず実行不可";
-        HasConnectionError = true;
-        Status = DesktopText.Get("InboxWorkspaceInvalid");
+        SetWorkspaceError();
         ApproveCommand.NotifyCanExecuteChanged();
         RejectCommand.NotifyCanExecuteChanged();
+    }
+
+    private void SetWorkspaceError()
+    {
+        ConnectionError = ConnectionErrorKind.Workspace;
+        Status = ConnectionErrorMessage;
     }
 
     private void NotifyRestoredSelection()
