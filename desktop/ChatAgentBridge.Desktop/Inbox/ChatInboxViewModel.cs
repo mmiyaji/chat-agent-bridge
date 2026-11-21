@@ -221,12 +221,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public partial bool IsConnected { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnectionConfirmed { get; set; }
-    private enum ConnectionErrorKind { None, Connection, Workspace }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConnectionError))]
+    private partial bool HasTransportError { get; set; }
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConnectionError), nameof(ConnectionErrorMessage),
         nameof(ConnectionErrorActionLabel), nameof(ConnectionSummaryStatus), nameof(ShowConnectionSummaryStatus))]
-    private partial ConnectionErrorKind ConnectionError { get; set; }
-    public bool HasConnectionError => ConnectionError != ConnectionErrorKind.None;
-    public bool HasWorkspaceError => ConnectionError == ConnectionErrorKind.Workspace;
+    public partial bool HasWorkspaceError { get; private set; }
+    public bool HasConnectionError => HasWorkspaceError || HasTransportError;
     public bool ShowWorkspaceRepairOnly => HasWorkspaceError && !IsConnected && Conversations.Count == 0;
     public string ConnectionErrorMessage => HasWorkspaceError ? DesktopText.Get("InboxWorkspaceInvalid") : Status;
     public string ConnectionErrorActionLabel => HasWorkspaceError ? DesktopText.Get("InboxChooseWorkingFolder") : MrtText.Get("InboxOpenConnectionSettings.Content");
@@ -776,7 +776,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private async Task ConnectAsync(IChatTransport transport)
     {
         if (IsConnected || _closing) { await transport.DisposeAsync(); return; }
-        ConnectionError = ConnectionErrorKind.None;
+        HasTransportError = false;
         ProgressNotice = "";
         IsConnected = true;
         _disconnecting = false;
@@ -812,7 +812,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 await transport.DisposeAsync();
                 IsConnected = false;
-                SetWorkspaceError();
+                HasWorkspaceError = true;
                 return;
             }
             // Reconnection invalidates pending work from the previous connection.
@@ -906,8 +906,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await await completion.Task;
             }, cancellationToken);
             Status = DesktopText.Get("InboxConnectionEnded");
-            ConnectionError = !_disconnecting && !_closing && !cancellationToken.IsCancellationRequested
-                ? ConnectionErrorKind.Connection : ConnectionErrorKind.None;
+            HasTransportError = !_disconnecting && !_closing && !cancellationToken.IsCancellationRequested;
         }
         catch (OperationCanceledException) { Status = DesktopText.Get("InboxDisconnectedNotice"); }
         catch (DiscordConfigurationException error)
@@ -932,7 +931,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             ConnectionEnded?.Invoke();
             if (!_disconnecting && !_closing)
                 await AuditConnectionAsync(ProviderOf(transport), "connection_lost",
-                    HasConnectionError ? AuditCodes.ConnectionError : AuditCodes.ConnectionEnded);
+                    HasTransportError ? AuditCodes.ConnectionError : AuditCodes.ConnectionEnded);
             RequestExecutionCancellation(CancellationReasons.ConnectionLost);
             connection.Cancel();
             try
@@ -979,7 +978,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         var connection = _connection;
         var receive = _receiveTask;
         _disconnecting = true;
-        ConnectionError = ConnectionErrorKind.None;
+        HasTransportError = false;
         var wasConfirmed = IsConnectionConfirmed;
         IsConnectionConfirmed = false;
         if (_transport is { } closingTransport)
@@ -1496,9 +1495,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             Volatile.Write(ref _accessSettings, settings);
             if (HasWorkspaceError)
             {
-                Status = DesktopText.Get(IsConnectionConfirmed ? "InboxConnectedWaiting" :
-                    IsConnected ? "InboxConnectingWaiting" : "InboxDisconnected");
-                ConnectionError = ConnectionErrorKind.None;
+                if (!HasTransportError)
+                    Status = DesktopText.Get(IsConnectionConfirmed ? "InboxConnectedWaiting" :
+                        IsConnected ? "InboxConnectingWaiting" : "InboxDisconnected");
+                HasWorkspaceError = false;
             }
             if (previous is not null && SettingsAuditChanges.Describe(previous, settings) is { Count: > 0 } changes)
                 await AuditAppEventAsync("settings_changed", string.Join(',', changes));

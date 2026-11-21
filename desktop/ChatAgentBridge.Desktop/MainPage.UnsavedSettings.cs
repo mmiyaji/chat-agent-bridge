@@ -106,8 +106,8 @@ public sealed partial class MainPage
             _allowNextSettingsNavigation = true;
         }
         // SelectionChanged runs synchronously here and applies the page (or replays the approved destination).
-        MainNavigation.SelectedItem = page;
-        _allowNextSettingsNavigation = false;
+        try { MainNavigation.SelectedItem = page; }
+        finally { _allowNextSettingsNavigation = false; }
         return _selectedNavigationTag == tag;
     }
 

@@ -303,134 +303,179 @@
                             </StackPanel>
                     </Border>
                 </ScrollViewer>
-                <StackPanel Padding="16,12,16,0" Spacing="12"
-                            Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
+                <Border Padding="16,12,16,0"
+                        Visibility="{x:Bind inbox:ChatInboxPage.InboxBackVisibility(ViewModel.IsWideLayout, ViewModel.HasSelectedConversation), Mode=OneWay}">
                     <Button x:Name="InboxBackButton" Click="BackToConversations_Click"
-                            Visibility="{x:Bind inbox:ChatInboxPage.BackButtonVisibility(ViewModel.IsWideLayout), Mode=OneWay}"
                             AutomationProperties.AutomationId="InboxBackToConversations" x:Uid="InboxBackToConversations" />
-                    <Grid ColumnSpacing="10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid Width="32" Height="32" VerticalAlignment="Top">
-                            <PersonPicture x:Name="InboxSelectedPersonPicture" Width="32" Height="32"
-                                           DisplayName="{x:Bind ViewModel.SelectedConversation.AvatarDisplayName, Mode=OneWay, FallbackValue=''}"
-                                           AutomationProperties.Name="{x:Bind ViewModel.SelectedConversation.PersonName, Mode=OneWay, FallbackValue=''}"
-                                           AutomationProperties.AccessibilityView="Control"
-                                           AutomationProperties.AutomationId="InboxSelectedPersonPicture" />
-                            <PersonPicture Width="32" Height="32" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw"
-                                           DisplayName="{x:Bind ViewModel.SelectedConversation.AvatarDisplayName, Mode=OneWay, FallbackValue=''}"
-                                           ProfilePicture="{x:Bind inbox:ChatInboxPage.AvatarImage(ViewModel.SelectedConversation.AvatarCachePath), Mode=OneWay, FallbackValue={x:Null}}"
-                                           Visibility="{x:Bind inbox:ChatInboxPage.AvatarVisibility(ViewModel.SelectedConversation.AvatarCachePath), Mode=OneWay, FallbackValue=Collapsed}"
-                                           AutomationProperties.AutomationId="InboxSelectedProfileImage" />
-                        </Grid>
-                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center"
-                                    Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRequest), Mode=OneWay}">
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}"
-                                       Text="{x:Bind ViewModel.Selected.RequesterDisplayName, Mode=OneWay, FallbackValue=''}"
-                                       TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="InboxRequester" />
-                            <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}">
-                                <Run Text="{x:Bind ViewModel.Selected.ProviderDisplayName, Mode=OneWay, FallbackValue=''}" /><Run Text=" · " /><Run Text="{x:Bind ViewModel.SelectedConversation.DisplayLocation, Mode=OneWay, FallbackValue=''}" />
-                            </TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center"
-                                    Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRestoredConversation), Mode=OneWay}">
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}"
-                                       Text="{x:Bind ViewModel.SelectedConversation.ListTitle, Mode=OneWay, FallbackValue=''}"
-                                       TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{x:Bind ViewModel.SelectedConversation.TitleLocation, Mode=OneWay, FallbackValue=''}"
-                                       TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
-                                    Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRequest), Mode=OneWay}">
-                            <presentation:StatusIcon Tone="{x:Bind ViewModel.Selected.StateTone, Mode=OneWay, FallbackValue='neutral'}" VerticalAlignment="Center" />
-                            <TextBlock Text="{x:Bind ViewModel.Selected.StateDisplay, Mode=OneWay, FallbackValue=''}"
-                                       TextWrapping="Wrap" MaxWidth="124" Style="{StaticResource BodyStrongTextBlockStyle}"
-                                       VerticalAlignment="Center" AutomationProperties.AutomationId="InboxSelectedState" />
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
+                </Border>
                 <ScrollViewer x:Name="InboxDetailScroll" Grid.Row="1" Margin="16,12,8,0" Padding="0,0,8,16"
                               VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                              Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRequest), Mode=OneWay}"
-                              AutomationProperties.AutomationId="InboxDetailScroll">
-                    <StackPanel Spacing="16" AutomationProperties.AutomationId="InboxConversationDetail">
-                        <StackPanel Spacing="4" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.ShowRequestPicker), Mode=OneWay}">
-                            <TextBlock x:Name="InboxRequestCountText" Text="{x:Bind ViewModel.SelectedRequestCountLabel, Mode=OneWay}"
-                                       Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="InboxRequestCount" />
-                            <ComboBox ItemsSource="{x:Bind ViewModel.ConversationRequests, Mode=OneWay}"
-                                      SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}" DisplayMemberPath="RequestLabel"
-                                      HorizontalAlignment="Stretch" AutomationProperties.LabeledBy="{x:Bind InboxRequestCountText}"
-                                      AutomationProperties.AutomationId="ChatRequests" x:Uid="InboxRequestPicker" localization:LocalizedResourceKey.Key="InboxRequestPicker" />
-                        </StackPanel>
-                        <StackPanel Spacing="6">
-                            <TextBlock x:Name="InboxPromptHeading" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxPromptLabel" localization:LocalizedResourceKey.Key="InboxPromptLabel" />
-                            <TextBox Text="{x:Bind ViewModel.Selected.PromptDisplay, Mode=OneWay, FallbackValue=''}" IsReadOnly="True" TextWrapping="Wrap"
-                                     AcceptsReturn="True" MaxHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     AutomationProperties.LabeledBy="{x:Bind InboxPromptHeading}" AutomationProperties.AutomationId="InboxSelectedPrompt" />
-                        </StackPanel>
-                        <StackPanel Spacing="10" AutomationProperties.AutomationId="InboxExecutionConditions"
-                                    Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsSelectedPending), Mode=OneWay}">
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxExecutionConditions" localization:LocalizedResourceKey.Key="InboxExecutionConditions" />
-                            <StackPanel Spacing="2">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           x:Uid="InboxExecutionAgent" localization:LocalizedResourceKey.Key="InboxExecutionAgent" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedAgentLabel, Mode=OneWay}" TextWrapping="Wrap" />
+                              Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}"
+                              AutomationProperties.AutomationId="{x:Bind inbox:ChatInboxPage.DetailScrollAutomationId(ViewModel.HasSelectedRestoredConversation), Mode=OneWay}">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Width="32" Height="32" VerticalAlignment="Top">
+                                <PersonPicture x:Name="InboxSelectedPersonPicture" Width="32" Height="32"
+                                               DisplayName="{x:Bind ViewModel.SelectedConversation.AvatarDisplayName, Mode=OneWay, FallbackValue=''}"
+                                               AutomationProperties.Name="{x:Bind ViewModel.SelectedConversation.PersonName, Mode=OneWay, FallbackValue=''}"
+                                               AutomationProperties.AccessibilityView="Control"
+                                               AutomationProperties.AutomationId="InboxSelectedPersonPicture" />
+                                <PersonPicture Width="32" Height="32" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw"
+                                               DisplayName="{x:Bind ViewModel.SelectedConversation.AvatarDisplayName, Mode=OneWay, FallbackValue=''}"
+                                               ProfilePicture="{x:Bind inbox:ChatInboxPage.AvatarImage(ViewModel.SelectedConversation.AvatarCachePath), Mode=OneWay, FallbackValue={x:Null}}"
+                                               Visibility="{x:Bind inbox:ChatInboxPage.AvatarVisibility(ViewModel.SelectedConversation.AvatarCachePath), Mode=OneWay, FallbackValue=Collapsed}"
+                                               AutomationProperties.AutomationId="InboxSelectedProfileImage" />
+                            </Grid>
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center"
+                                        Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRequest), Mode=OneWay}">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           Text="{x:Bind ViewModel.Selected.RequesterDisplayName, Mode=OneWay, FallbackValue=''}"
+                                           TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="InboxRequester" />
+                                <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}">
+                                    <Run Text="{x:Bind ViewModel.Selected.ProviderDisplayName, Mode=OneWay, FallbackValue=''}" /><Run Text=" · " /><Run Text="{x:Bind ViewModel.SelectedConversation.DisplayLocation, Mode=OneWay, FallbackValue=''}" />
+                                </TextBlock>
                             </StackPanel>
-                            <StackPanel Spacing="2">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           x:Uid="InboxExecutionWorkspace" localization:LocalizedResourceKey.Key="InboxExecutionWorkspace" />
-                                <TextBlock Text="{x:Bind ViewModel.Selected.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center"
+                                        Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRestoredConversation), Mode=OneWay}">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           Text="{x:Bind ViewModel.SelectedConversation.ListTitle, Mode=OneWay, FallbackValue=''}"
+                                           TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.SelectedConversation.TitleLocation, Mode=OneWay, FallbackValue=''}"
+                                           TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
                             </StackPanel>
-                            <StackPanel Spacing="2">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           x:Uid="InboxExecutionResultPolicy" localization:LocalizedResourceKey.Key="InboxExecutionResultPolicy" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedResultPolicyLabel, Mode=OneWay}" TextWrapping="Wrap" />
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                                        Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRequest), Mode=OneWay}">
+                                <presentation:StatusIcon Tone="{x:Bind ViewModel.Selected.StateTone, Mode=OneWay, FallbackValue='neutral'}" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ViewModel.Selected.StateDisplay, Mode=OneWay, FallbackValue=''}"
+                                           TextWrapping="Wrap" MaxWidth="124" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           VerticalAlignment="Center" AutomationProperties.AutomationId="InboxSelectedState" />
                             </StackPanel>
-                        </StackPanel>
-                        <StackPanel Spacing="8"
-                                    Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.Selected.ShowExecutionResult), Mode=OneWay, FallbackValue=Collapsed}">
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxResultLabel" localization:LocalizedResourceKey.Key="InboxResultLabel" />
-                            <TextBox Text="{x:Bind ViewModel.SelectedOutput, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
-                                     AcceptsReturn="True" MaxHeight="240" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     AutomationProperties.AutomationId="ChatOutput" x:Uid="ChatOutput" />
-                            <TextBlock Text="{x:Bind ViewModel.SelectedUsage, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
-                                       AutomationProperties.AutomationId="ChatUsageSummary" x:Uid="ChatUsageSummary" />
-                            <StackPanel Spacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedResult), Mode=OneWay}">
+                        </Grid>
+                        <StackPanel Spacing="16" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRequest), Mode=OneWay}"
+                                    AutomationProperties.AutomationId="InboxConversationDetail">
+                            <StackPanel Spacing="4" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.ShowRequestPicker), Mode=OneWay}">
+                                <TextBlock x:Name="InboxRequestCountText" Text="{x:Bind ViewModel.SelectedRequestCountLabel, Mode=OneWay}"
+                                           Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="InboxRequestCount" />
+                                <ComboBox ItemsSource="{x:Bind ViewModel.ConversationRequests, Mode=OneWay}"
+                                          SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}" DisplayMemberPath="RequestLabel"
+                                          HorizontalAlignment="Stretch" AutomationProperties.LabeledBy="{x:Bind InboxRequestCountText}"
+                                          AutomationProperties.AutomationId="ChatRequests" x:Uid="InboxRequestPicker" localization:LocalizedResourceKey.Key="InboxRequestPicker" />
+                            </StackPanel>
+                            <StackPanel Spacing="6">
+                                <TextBlock x:Name="InboxPromptHeading" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxPromptLabel" localization:LocalizedResourceKey.Key="InboxPromptLabel" />
+                                <TextBox Text="{x:Bind ViewModel.Selected.PromptDisplay, Mode=OneWay, FallbackValue=''}" IsReadOnly="True" TextWrapping="Wrap"
+                                         AcceptsReturn="True" MaxHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         AutomationProperties.LabeledBy="{x:Bind InboxPromptHeading}" AutomationProperties.AutomationId="InboxSelectedPrompt" />
+                            </StackPanel>
+                            <StackPanel Spacing="10" AutomationProperties.AutomationId="InboxExecutionConditions"
+                                        Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsSelectedPending), Mode=OneWay}">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxExecutionConditions" localization:LocalizedResourceKey.Key="InboxExecutionConditions" />
                                 <StackPanel Spacing="2">
                                     <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               x:Uid="InboxResultBodyLabel" localization:LocalizedResourceKey.Key="InboxResultBodyLabel" />
-                                    <TextBlock Text="{x:Bind ViewModel.Selected.ResultBodyDelivery, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap"
-                                               AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="InboxResultBodyDelivery" />
+                                               x:Uid="InboxExecutionAgent" localization:LocalizedResourceKey.Key="InboxExecutionAgent" />
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedAgentLabel, Mode=OneWay}" TextWrapping="Wrap" />
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               x:Uid="InboxResultDestinationLabel" localization:LocalizedResourceKey.Key="InboxResultDestinationLabel" />
-                                    <TextBlock Text="{x:Bind ViewModel.Selected.ResultDestination, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap"
-                                               AutomationProperties.AutomationId="InboxResultDestination" />
+                                               x:Uid="InboxExecutionWorkspace" localization:LocalizedResourceKey.Key="InboxExecutionWorkspace" />
+                                    <TextBlock Text="{x:Bind ViewModel.Selected.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               x:Uid="InboxExecutionResultPolicy" localization:LocalizedResourceKey.Key="InboxExecutionResultPolicy" />
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedResultPolicyLabel, Mode=OneWay}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </StackPanel>
-                            <StackPanel Spacing="2"
-                                        Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedAttachmentStatus), Mode=OneWay}">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           x:Uid="InboxResultAttachmentsLabel" localization:LocalizedResourceKey.Key="InboxResultAttachmentsLabel" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedAttachmentStatus, Mode=OneWay}"
-                                           TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SelectedAttachmentStatus" />
+                            <StackPanel Spacing="8"
+                                        Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.Selected.ShowExecutionResult), Mode=OneWay, FallbackValue=Collapsed}">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxResultLabel" localization:LocalizedResourceKey.Key="InboxResultLabel" />
+                                <TextBox Text="{x:Bind ViewModel.SelectedOutput, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                                         AcceptsReturn="True" MaxHeight="240" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         AutomationProperties.AutomationId="ChatOutput" x:Uid="ChatOutput" />
+                                <TextBlock Text="{x:Bind ViewModel.SelectedUsage, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                           AutomationProperties.AutomationId="ChatUsageSummary" x:Uid="ChatUsageSummary" />
+                                <StackPanel Spacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedResult), Mode=OneWay}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   x:Uid="InboxResultBodyLabel" localization:LocalizedResourceKey.Key="InboxResultBodyLabel" />
+                                        <TextBlock Text="{x:Bind ViewModel.Selected.ResultBodyDelivery, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap"
+                                                   AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="InboxResultBodyDelivery" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   x:Uid="InboxResultDestinationLabel" localization:LocalizedResourceKey.Key="InboxResultDestinationLabel" />
+                                        <TextBlock Text="{x:Bind ViewModel.Selected.ResultDestination, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap"
+                                                   AutomationProperties.AutomationId="InboxResultDestination" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Spacing="2"
+                                            Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedAttachmentStatus), Mode=OneWay}">
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               x:Uid="InboxResultAttachmentsLabel" localization:LocalizedResourceKey.Key="InboxResultAttachmentsLabel" />
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedAttachmentStatus, Mode=OneWay}"
+                                               TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SelectedAttachmentStatus" />
+                                </StackPanel>
                             </StackPanel>
+                            <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.SelectedLiveOutput, Mode=OneWay}"
+                                                        AutomationProperties.AutomationId="ChatLiveOutput" />
+                            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="InboxRequestContext" AutomationProperties.AutomationId="InboxRequestContext">
+                                <StackPanel Spacing="8">
+                                    <TextBlock TextWrapping="Wrap" x:Uid="InboxSameThreadHelp" localization:LocalizedResourceKey.Key="InboxSameThreadHelp" />
+                                    <TextBlock Text="{x:Bind ViewModel.Selected.Source, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxSelectedIdentity" />
+                                    <TextBlock Text="{x:Bind ViewModel.Selected.Request.ThreadId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                    <TextBlock Text="{x:Bind ViewModel.Selected.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                    <TextBlock Text="{x:Bind ViewModel.Selected.SessionLabel, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Expander>
                         </StackPanel>
-                        <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.SelectedLiveOutput, Mode=OneWay}"
-                                                    AutomationProperties.AutomationId="ChatLiveOutput" />
-                        <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="InboxRequestContext" AutomationProperties.AutomationId="InboxRequestContext">
-                            <StackPanel Spacing="8">
-                                <TextBlock TextWrapping="Wrap" x:Uid="InboxSameThreadHelp" localization:LocalizedResourceKey.Key="InboxSameThreadHelp" />
-                                <TextBlock Text="{x:Bind ViewModel.Selected.Source, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxSelectedIdentity" />
-                                <TextBlock Text="{x:Bind ViewModel.Selected.Request.ThreadId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                <TextBlock Text="{x:Bind ViewModel.Selected.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                <TextBlock Text="{x:Bind ViewModel.Selected.SessionLabel, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Expander>
+                        <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="0,0,0,4" MaxWidth="560"
+                                Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRestoredConversation), Mode=OneWay}"
+                                HorizontalAlignment="Stretch" AutomationProperties.AutomationId="InboxRestoredConversation">
+                                <StackPanel Spacing="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <presentation:StatusIcon Tone="{x:Bind ViewModel.SelectedConversation.StateTone, Mode=OneWay, FallbackValue='neutral'}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedConversation.StateSummary, Mode=OneWay, FallbackValue=''}"
+                                                   Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center"
+                                                   AutomationProperties.AutomationId="InboxRestoredState" />
+                                    </StackPanel>
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedConversation.RequestCountLabel, Mode=OneWay, FallbackValue=''}"
+                                               Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               AutomationProperties.AutomationId="InboxRestoredRequestCount" />
+                                    <TextBlock Text="{x:Bind ViewModel.RestoredConversationDescription, Mode=OneWay}"
+                                               Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap"
+                                               AutomationProperties.AutomationId="InboxRestoredConversationDescription" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   x:Uid="InboxRestoredTitleLabel" localization:LocalizedResourceKey.Key="InboxRestoredTitleLabel" />
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Title, Mode=OneWay, FallbackValue=''}"
+                                                   Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxRestoredTitle" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   x:Uid="InboxRestoredLocationLabel" localization:LocalizedResourceKey.Key="InboxRestoredLocationLabel" />
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Location, Mode=OneWay, FallbackValue=''}"
+                                                   Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxRestoredLocation" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   x:Uid="InboxRestoredActivityLabel" localization:LocalizedResourceKey.Key="InboxRestoredActivityLabel" />
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Activity, Mode=OneWay, FallbackValue=''}"
+                                                   Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxRestoredActivity" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   x:Uid="InboxRestoredWorkspaceLabel" localization:LocalizedResourceKey.Key="InboxRestoredWorkspaceLabel" />
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Workspace, Mode=OneWay, FallbackValue=''}"
+                                                   Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                                   AutomationProperties.AutomationId="InboxRestoredWorkspace" />
+                                    </StackPanel>
+                                </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
 
@@ -474,53 +519,6 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-                <ScrollViewer x:Name="InboxRestoredConversationScroll" Grid.Row="1" Margin="16,12,16,16"
-                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                              Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRestoredConversation), Mode=OneWay}"
-                              AutomationProperties.AutomationId="InboxRestoredConversationDetails">
-                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="0,0,0,4" MaxWidth="560"
-                            HorizontalAlignment="Stretch" AutomationProperties.AutomationId="InboxRestoredConversation">
-                        <StackPanel Spacing="12">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <presentation:StatusIcon Tone="{x:Bind ViewModel.SelectedConversation.StateTone, Mode=OneWay, FallbackValue='neutral'}" VerticalAlignment="Center" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedConversation.StateSummary, Mode=OneWay, FallbackValue=''}"
-                                           Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center"
-                                           AutomationProperties.AutomationId="InboxRestoredState" />
-                            </StackPanel>
-                            <TextBlock Text="{x:Bind ViewModel.SelectedConversation.RequestCountLabel, Mode=OneWay, FallbackValue=''}"
-                                       Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       AutomationProperties.AutomationId="InboxRestoredRequestCount" />
-                            <TextBlock Text="{x:Bind ViewModel.RestoredConversationDescription, Mode=OneWay}"
-                                       Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap"
-                                       AutomationProperties.AutomationId="InboxRestoredConversationDescription" />
-                            <StackPanel Spacing="4">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           x:Uid="InboxRestoredTitleLabel" localization:LocalizedResourceKey.Key="InboxRestoredTitleLabel" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Title, Mode=OneWay, FallbackValue=''}"
-                                           Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxRestoredTitle" />
-                            </StackPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           x:Uid="InboxRestoredLocationLabel" localization:LocalizedResourceKey.Key="InboxRestoredLocationLabel" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Location, Mode=OneWay, FallbackValue=''}"
-                                           Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxRestoredLocation" />
-                            </StackPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           x:Uid="InboxRestoredActivityLabel" localization:LocalizedResourceKey.Key="InboxRestoredActivityLabel" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Activity, Mode=OneWay, FallbackValue=''}"
-                                           Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxRestoredActivity" />
-                            </StackPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           x:Uid="InboxRestoredWorkspaceLabel" localization:LocalizedResourceKey.Key="InboxRestoredWorkspaceLabel" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Workspace, Mode=OneWay, FallbackValue=''}"
-                                           Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
-                                           AutomationProperties.AutomationId="InboxRestoredWorkspace" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
             </Grid>
         </Grid>
     </Grid>

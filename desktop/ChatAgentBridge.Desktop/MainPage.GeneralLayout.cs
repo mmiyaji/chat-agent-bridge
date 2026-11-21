@@ -1,3 +1,4 @@
+using ChatAgentBridge_Desktop.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -63,6 +64,13 @@ public sealed partial class MainPage
             });
             WorkspaceRootInput.Focus(FocusState.Keyboard);
             await PickWorkspaceAsync();
+        }
+        catch (Exception)
+        {
+            ViewModel.StatusTitle = DesktopText.Get("InboxWorkspaceSettingsOpenFailed");
+            ViewModel.StatusMessage = DesktopText.Get("InboxWorkspaceSettingsOpenFailedHelp");
+            ViewModel.StatusSeverity = "Error";
+            ViewModel.IsStatusOpen = true;
         }
         finally { _openingInboxWorkspace = false; }
     }

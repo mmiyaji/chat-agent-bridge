@@ -22,7 +22,7 @@ public sealed partial class ChatInboxViewModel
                 {
                     foreach (var item in _requestActions.Keys.ToArray()) _ = CompleteRequestActionsAsync(item);
                     IsConnectionConfirmed = false;
-                    if (!HasWorkspaceError) ConnectionError = ConnectionErrorKind.None;
+                    HasTransportError = false;
                     var delay = Math.Max(1, (int)Math.Ceiling(status.NextRetryDelay?.TotalSeconds ?? 1));
                     Status = DesktopText.Get("InboxReconnecting", status.Attempt, delay);
                     _ = AuditConnectionAsync(ProviderOf(transport), "reconnecting", $"attempt:{status.Attempt}");
@@ -34,7 +34,7 @@ public sealed partial class ChatInboxViewModel
             {
                 if (!IsCurrent()) return;
                 IsConnectionConfirmed = true;
-                if (!HasWorkspaceError) ConnectionError = ConnectionErrorKind.None;
+                HasTransportError = false;
                 Status = DesktopText.Get(hasConnected ? "InboxReconnected" : "InboxConnectedWaiting");
                 _ = AuditConnectionAsync(ProviderOf(transport), "connected",
                     hasConnected ? AuditCodes.ConnectionReconnected : AuditCodes.ConnectionFirst);

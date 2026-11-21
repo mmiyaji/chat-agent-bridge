@@ -80,7 +80,7 @@
                                     Icon="{x:Bind local:MainPage.ConnectionNavigationIcon(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
                                     HorizontalContentAlignment="Stretch"
                                     AutomationProperties.Name="{x:Bind local:MainPage.ConnectionNavigationLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel), Mode=OneWay}"
-                                    ToolTipService.ToolTip="{x:Bind local:MainPage.ConnectionNavigationTooltip(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel, InboxPage.ViewModel.Status), Mode=OneWay}">
+                                    ToolTipService.ToolTip="{x:Bind local:MainPage.ConnectionNavigationTooltip(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel, InboxPage.ViewModel.ConnectionErrorMessage), Mode=OneWay}">
                     <NavigationViewItem.Content>
                         <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>

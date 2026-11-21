@@ -24,7 +24,7 @@ public sealed partial class ChatInboxViewModel
     internal void ReportConnectionError(string messageKey)
     {
         Status = DesktopText.Get(messageKey);
-        ConnectionError = ConnectionErrorKind.Connection;
+        HasTransportError = true;
     }
 
     public bool RequiresConnectionChangeConfirmation(BridgeSettings draft) =>

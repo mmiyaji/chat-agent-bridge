@@ -216,5 +216,6 @@ public sealed partial class ChatInboxViewModel
         NotifyConnectionPresentation();
     }
     partial void OnIsConnectionConfirmedChanged(bool value) => NotifyConnectionPresentation();
-    partial void OnConnectionErrorChanged(ConnectionErrorKind value) => NotifyConnectionPresentation();
+    partial void OnHasTransportErrorChanged(bool value) => NotifyConnectionPresentation();
+    partial void OnHasWorkspaceErrorChanged(bool value) => NotifyConnectionPresentation();
 }

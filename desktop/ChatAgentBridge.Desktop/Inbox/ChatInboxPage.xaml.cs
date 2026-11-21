@@ -34,7 +34,6 @@ public sealed partial class ChatInboxPage : Page
     public ChatInboxPage()
     {
         InitializeComponent();
-        Layout.MouseWheelScrollBehavior.Attach(InboxRestoredConversationScroll);
         Layout.MouseWheelScrollBehavior.Attach(InboxDetailScroll);
         ConversationSplitter.AddHandler(UIElement.ManipulationStartedEvent,
             new Microsoft.UI.Xaml.Input.ManipulationStartedEventHandler((_, _) => _isResizingConversationList = true), true);
@@ -60,14 +59,12 @@ public sealed partial class ChatInboxPage : Page
         ViewModel.AccessRequestReceived += NotifyAccessRequest;
         ViewModel.PropertyChanged += (_, args) =>
         {
-            if (args.PropertyName == nameof(ViewModel.Selected))
+            if (args.PropertyName is nameof(ViewModel.Selected) or nameof(ViewModel.SelectedConversation))
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     InboxApprovalHelpTip.IsOpen = false;
                     InboxDetailScroll.ChangeView(null, 0, null, true);
                 });
-            else if (args.PropertyName == nameof(ViewModel.SelectedConversation))
-                DispatcherQueue.TryEnqueue(() => InboxApprovalHelpTip.IsOpen = false);
         };
         ViewModel.ConnectionEnded += () => App.PendingRequestNotifications.ClearAll();
         App.PendingRequestNotifications.StatusChanged += () =>
@@ -162,8 +159,8 @@ public sealed partial class ChatInboxPage : Page
         wide || !detailOpen ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
     public static Microsoft.UI.Xaml.Visibility DetailPaneVisibility(bool wide, bool detailOpen) =>
         wide || detailOpen ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
-    public static Microsoft.UI.Xaml.Visibility BackButtonVisibility(bool wide) =>
-        wide ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
+    public static Visibility InboxBackVisibility(bool wide, bool hasSelection) => VisibleWhen(!wide && hasSelection);
+    public static string DetailScrollAutomationId(bool restored) => restored ? "InboxRestoredConversationDetails" : "InboxDetailScroll";
     public static Microsoft.UI.Xaml.Visibility VisibleWhen(bool value) => value ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
     public static Microsoft.UI.Xaml.Visibility HiddenWhen(bool value) => value ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
     public static Visibility ChatDescriptionVisibility(bool wide, bool repairOnly) => VisibleWhen(wide && !repairOnly);

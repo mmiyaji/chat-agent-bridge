@@ -514,6 +514,8 @@
   <data name="InboxPersistenceAllRowsRejected" xml:space="preserve"><value>会話情報が不正なため、{0}件を保存できませんでした。既存の保存データは上書きしていません。作業フォルダーなどの設定を確認してください。</value></data>
   <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>作業フォルダーを確認してください。設定するまで依頼を受信できません。</value></data>
   <data name="InboxChooseWorkingFolder" xml:space="preserve"><value>作業フォルダーを選ぶ</value></data>
+  <data name="InboxWorkspaceSettingsOpenFailed" xml:space="preserve"><value>作業フォルダーの設定を開けませんでした</value></data>
+  <data name="InboxWorkspaceSettingsOpenFailedHelp" xml:space="preserve"><value>エージェント設定 → 共通設定から作業フォルダーを指定してください。</value></data>
   <data name="InboxInterrupted" xml:space="preserve"><value>中断</value></data>
   <data name="InboxRestoredIdle" xml:space="preserve"><value>復元済み・待機中</value></data>
   <data name="InboxClearFiltersLabel" xml:space="preserve"><value>絞り込みを解除</value></data>
