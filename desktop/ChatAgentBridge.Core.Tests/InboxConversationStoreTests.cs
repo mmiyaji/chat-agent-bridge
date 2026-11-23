@@ -5,7 +5,8 @@ namespace ChatAgentBridge.Core.Tests;
 
 public sealed class InboxConversationStoreTests
 {
-    private static readonly DateTimeOffset Timestamp = new(2026, 10, 24, 1, 2, 3, TimeSpan.Zero);
+    // Keep default snapshots recent; tests for expiration supply their own timestamp.
+    private static readonly DateTimeOffset Timestamp = DateTimeOffset.UtcNow.AddDays(-1);
 
     [Fact]
     public async Task SaveAndList_RoundTripsOnlyMetadataAndRestoresActiveStatesAsInterrupted()
