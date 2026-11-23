@@ -77,6 +77,7 @@ sealed class WindowsApplicationStarter : IPortableApplicationStarter
         using var ready = new EventWaitHandle(false, EventResetMode.ManualReset, healthEventName);
         var start = CreateStart(executable, dataDirectory);
         start.Environment["CAB_PORTABLE_UPDATE_READY_EVENT"] = healthEventName;
+        start.Environment["CAB_PORTABLE_UPDATE_FULL_STARTUP"] = "1";
         using var process = Process.Start(start) ?? throw new IOException("The updated application did not start.");
         // Allow for service and window setup, then the separate migration and page startup budgets.
         var elapsed = Stopwatch.StartNew();
@@ -107,6 +108,7 @@ sealed class WindowsApplicationStarter : IPortableApplicationStarter
         start.ArgumentList.Add(dataDirectory);
         // A restored process must not inherit a stale startup event.
         start.Environment.Remove("CAB_PORTABLE_UPDATE_READY_EVENT");
+        start.Environment.Remove("CAB_PORTABLE_UPDATE_FULL_STARTUP");
         return start;
     }
 }

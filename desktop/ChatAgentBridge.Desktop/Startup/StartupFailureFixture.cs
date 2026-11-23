@@ -30,12 +30,14 @@ internal static class StartupFailureFixture
         "page-error" => Task.FromException(new InvalidOperationException("Isolated startup page fixture.")),
         "page-hang" => Task.Delay(System.Threading.Timeout.Infinite),
         "page-late" => Task.Delay(TimeSpan.FromSeconds(2.5)),
+        "update-slow" => Task.Delay(TimeSpan.FromSeconds(24)),
         _ => Task.CompletedTask
     };
 
     internal static async Task BeforeMigrationAsync(IProgress<MigrationProgress> progress)
     {
         if (Mode == "migration-hang") await Task.Delay(System.Threading.Timeout.Infinite);
+        if (Mode == "update-slow") await Task.Delay(TimeSpan.FromSeconds(24));
         if (Mode == "migration-slow")
         {
             progress.Report(new MigrationProgress("isolated-slow-migration", 1, 1, MigrationPhase.Running));

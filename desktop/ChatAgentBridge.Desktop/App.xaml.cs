@@ -84,6 +84,8 @@ public partial class App : Application
     {
         var updateReadyEvent = Environment.GetEnvironmentVariable("CAB_PORTABLE_UPDATE_READY_EVENT");
         Environment.SetEnvironmentVariable("CAB_PORTABLE_UPDATE_READY_EVENT", null);
+        var confirmFullStartup = Environment.GetEnvironmentVariable("CAB_PORTABLE_UPDATE_FULL_STARTUP") == "1";
+        Environment.SetEnvironmentVariable("CAB_PORTABLE_UPDATE_FULL_STARTUP", null);
         // AUMID activation does not inherit the invoking terminal's environment.
         // An explicit data directory keeps packaged UI tests isolated.
         IReadOnlyList<string> launchArguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
@@ -167,12 +169,13 @@ public partial class App : Application
         // after the window is visible; large archives must not delay first-window creation.
 
         const string updateReadyEventPrefix = @"Local\ChatAgentBridge.Update.";
+        if (!DeploymentRuntime.IsPortable || updateReadyEvent is null ||
+            !updateReadyEvent.StartsWith(updateReadyEventPrefix, StringComparison.Ordinal) ||
+            updateReadyEvent.Length != updateReadyEventPrefix.Length + 32 ||
+            !updateReadyEvent[^32..].All(Uri.IsHexDigit)) updateReadyEvent = null;
         var mainWindow = new MainWindow
         {
-            PortableUpdateReadyEvent = DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
-                updateReadyEvent.StartsWith(updateReadyEventPrefix, StringComparison.Ordinal) &&
-                updateReadyEvent.Length == updateReadyEventPrefix.Length + 32 &&
-                updateReadyEvent[^32..].All(Uri.IsHexDigit) ? updateReadyEvent : null,
+            PortableUpdateReadyEvent = confirmFullStartup ? updateReadyEvent : null,
         };
         Window = mainWindow;
         KeepAwake = new(new ChatAgentBridge.Core.KeepAwakePreferencesStore(), WindowHandle);
@@ -196,6 +199,8 @@ public partial class App : Application
             _ = Startup.BackgroundTaskShutdown.StopAsync(_logRetentionTask, _logRetentionLifetime);
         };
         Window.Activate();
+        // Older installed helpers expect window activation within 45 seconds. New helpers opt in to full startup.
+        if (!confirmFullStartup && updateReadyEvent is not null) MainWindow.SignalPortableUpdateReady(updateReadyEvent);
         _ = AppLifecycleAudit.RecordStartedAsync();
         if (_windowServicesClosed) return;
         _keepAwakeTask = InitializeKeepAwakeAsync(_keepAwakeLifetime.Token);

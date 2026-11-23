@@ -193,6 +193,8 @@ The request detail shows the prompt and execution information above the action b
 
 The inbox loads saved conversations before showing setup notices. You can browse saved conversations even when no chat service is configured.
 
+Saving settings refreshes the execution details shown on requests awaiting approval. Reconnecting after the working folder becomes available clears its warning.
+
 Actions are tied to the requester and the conversation (channel, thread and user). Posts from other users in the same thread are not treated as part of your conversation.
 
 | Action | Slack | Mattermost | Discord |

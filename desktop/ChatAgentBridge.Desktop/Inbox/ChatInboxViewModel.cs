@@ -167,6 +167,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private InboxItem? _notificationApprovedItem;
     private InboxItem? _automaticallyApprovedItem;
     private bool _processingPolicies;
+    private int _approvalPreviewRevision;
     private readonly HashSet<InboxItem> _notifiedRequests = [];
     private readonly HashSet<InboxItem> _automaticallyAttempted = [];
     private readonly Dictionary<InboxItem, PropertyChangedEventHandler> _requestHandlers = [];
@@ -817,6 +818,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 HasWorkspaceError = true;
                 return;
             }
+            if (Volatile.Read(ref _accessSettings)?.WorkspaceRoot == settings.WorkspaceRoot)
+                HasWorkspaceError = false;
             // Reconnection invalidates pending work from the previous connection.
             Requests.Clear();
             _notifiedRequests.Clear();
@@ -1496,6 +1499,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             SetConnectReadiness(settings);
             var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
+            _approvalPreviewRevision++;
             if (HasWorkspaceError)
             {
                 if (!HasTransportError)
@@ -1526,8 +1530,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 ReportConnectionError("InboxConnectionSettingsChanged");
                 _pendingSettingsReconnect = provider;
             }
-            else if (IsConnected && previous is not null && !SameExecutionDefaults(previous, settings))
-                Status = DesktopText.Get("InboxExecutionSettingsChanged");
+            else if (IsConnected)
+            {
+                if (previous is not null && !SameExecutionDefaults(previous, settings))
+                    Status = DesktopText.Get("InboxExecutionSettingsChanged");
+                await RefreshPendingApprovalPreviewsAsync(settings);
+            }
         }
         catch (Exception)
         {
@@ -1687,8 +1695,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
                 var switchesConversation = WorkspaceChatCommand.IsWorkspaceCommand(item.Prompt) || AgentChatCommand.TryParse(item.Prompt, out _);
                 var key = CreateSessionKey(item);
-                var binding = await _sessions.FindExecutionBindingAsync(key);
-                var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, await _store.LoadAsync()), binding);
+                var revision = _approvalPreviewRevision;
+                var (effective, binding) = await ResolveApprovalPreviewAsync(key, await _store.LoadAsync());
+                if (revision != _approvalPreviewRevision || item.State != "承認待ち" || ReferenceEquals(item, _activeItem)) continue;
                 item.ApprovalPreviewSettings = effective;
                 item.Workspace = effective.WorkspaceRoot;
                 if (await _sessions.CheckApprovalAsync(key, effective, binding, switchCommand: switchesConversation) is { Required: true } check)
@@ -1733,6 +1742,37 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 await Task.Yield();
                 _ = ProcessPendingPoliciesAsync();
+            }
+        }
+    }
+
+    private async Task<(BridgeSettings Settings, SessionBinding? Binding)> ResolveApprovalPreviewAsync(
+        SessionKey key, BridgeSettings settings)
+    {
+        var binding = await _sessions.FindExecutionBindingAsync(key);
+        var workspace = await _sessions.ApplyWorkspaceAsync(key, settings);
+        return (ConversationExecutionPolicy.GetEffectiveSettings(workspace, binding), binding);
+    }
+
+    private async Task RefreshPendingApprovalPreviewsAsync(BridgeSettings settings)
+    {
+        var pending = Requests.Where(item => item.State == "承認待ち" && !ReferenceEquals(item, _activeItem))
+            .ToLookup(CreateSessionKey);
+        foreach (var conversation in pending)
+        {
+            BridgeSettings preview;
+            try { (preview, _) = await ResolveApprovalPreviewAsync(conversation.Key, settings); }
+            catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or
+                UnauthorizedAccessException or System.Text.Json.JsonException)
+            {
+                // Approval will recheck the session. A preview failure alone must not revoke access.
+                continue;
+            }
+            foreach (var item in conversation.Where(item => item.State == "承認待ち" &&
+                         !ReferenceEquals(item, _activeItem) && Requests.Contains(item)))
+            {
+                item.ApprovalPreviewSettings = preview;
+                item.Workspace = preview.WorkspaceRoot;
             }
         }
     }

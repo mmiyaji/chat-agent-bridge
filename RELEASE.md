@@ -85,6 +85,8 @@ $nextZip = Join-Path $packageDirectory "ChatAgentBridge.Portable-$($release.Rele
 `PortableUpdateSmokeTest.ps1` は ZIP が `desktop/artifacts` または指定した `-WorkingDirectory` 以下にあることを要求します。
 以前の ZIP もその試験領域へ置いてください。以前の版には更新メタデータが必要です。
 
+ポータブル版 1.1.2 のヘルパーは、ウィンドウを起動できた時点で更新を確認します。新版のヘルパーは設定と画面の初期化完了まで待ちます。旧ヘルパーの45秒を超える正常起動を試す場合は、`CABStartupFixture=true` でビルドした検証専用 ZIP と公開済みの旧版 ZIP を指定し、`PortableUpdateSmokeTest.ps1` に `-SlowStartup` を追加します。
+
 画面からダウンロード・再起動まで試す方法は、[アップデータのローカル試験](docs/portable-update-tryout.ja.md)を参照してください。
 確認する項目:
 

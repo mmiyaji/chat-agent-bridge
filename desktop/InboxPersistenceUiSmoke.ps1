@@ -91,7 +91,7 @@ function Start-ExistingIsolatedApp([bool]$WaitForConnection = $true) {
     $start.Environment['CAB_LIVE_STEERING_RELEASE_FILE'] = $script:gate
     $start.Environment['CAB_LIVE_STEERING_OBSERVATIONS_FILE'] = $script:observations
     $script:app = [Diagnostics.Process]::Start($start)
-    if ($WaitForConnection) { Wait-For { (Results).connections -eq 1 } 'loopback connection after process restart' }
+    if ($WaitForConnection) { Wait-For { (Results).connections -eq 1 } 'loopback connection after process restart' 75 }
 
     $processCondition = [Windows.Automation.PropertyCondition]::new(
         [Windows.Automation.AutomationElement]::ProcessIdProperty, $script:app.Id)
@@ -119,6 +119,32 @@ function Start-Inbox([bool]$WaitForConnection = $true) {
     Invoke-Element $nav 'open chat inbox'
     Wait-Element 'InboxConversations' 20 | Out-Null
     if ($WaitForConnection) { Wait-For { (Results).connections -eq 1 } 'restored inbox connection' }
+}
+
+function Set-AttachmentApprovalPolicy([string]$OptionId, [string]$Mode) {
+    Select-Element 'NavConnections'
+    Select-Element 'ConnectionScopeCommon'
+    $card = (Scroll-ToElement 'FileAttachmentSettings').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+    if ($card.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) { $card.Expand() }
+    $picker = (Scroll-ToElement 'FileAttachmentApprovalMode').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+    $picker.Expand()
+    Invoke-Element (Wait-ProcessElement $OptionId) "select attachment approval policy '$Mode'"
+    Wait-ProcessElement 'SensitiveSettingsConfirmation' | Out-Null
+    Invoke-Element (Wait-ProcessElement 'PrimaryButton') 'confirm attachment policy change'
+    Wait-For {
+        (Get-Content -LiteralPath (Join-Path $script:data 'settings.json') -Raw | ConvertFrom-Json).FileAttachmentApprovalMode -eq $Mode
+    } "auto-save attachment policy '$Mode'"
+    Start-Inbox
+}
+
+function Assert-AttachmentPolicyHelp([string]$Label) {
+    Invoke-Element (Wait-Element 'InboxApprovalHelp') 'open approval policy help for the pending request'
+    $tip = Wait-ProcessElement 'InboxApprovalHelpTip'
+    Wait-For {
+        $texts = $tip.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
+        @($texts | Where-Object { $_.Current.Name -like "*$Label*" }).Count -gt 0
+    } "pending request attachment policy '$Label'"
+    Invoke-Element (Find-Element $tip 'CloseButton') 'close approval policy help'
 }
 
 function Read-InboxDocument {
@@ -226,17 +252,15 @@ function Assert-NoSecretMetadata([string[]]$Markers) {
 }
 
 try {
-    Start-IsolatedApp
-
-    # Seed the profile and loopback server using the shared helper, then restart with
-    # approval required while retaining the same data directory and fixture process.
+    # Seed the profile and loopback server without launching an extra app before configuring approval.
+    Start-IsolatedApp -SeedOnly
     $languagePath = Join-Path $script:data 'language.json'
     Write-JsonFile $languagePath @{ Language = $Language }
-    Stop-AppOnly
     $settingsPath = Join-Path $script:data 'settings.json'
     $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
     $settings.ChatApprovalMode = 'always'
     $settings.ChatResultMode = 'auto'
+    $settings | Add-Member -NotePropertyName FileAttachmentApprovalMode -NotePropertyValue 'always' -Force
     Write-JsonFile $settingsPath $settings
     Start-ExistingIsolatedApp
     Start-Inbox
@@ -246,6 +270,17 @@ try {
     $privateResult = 'INBOX_PRIVATE_RESULT_' + [guid]::NewGuid().ToString('N')
     Send-Request ('pending-' + [guid]::NewGuid().ToString('N')) $thread "$privatePrompt LIVE_STEER_QUEUE_1 $privateResult"
     $pending = Wait-InboxEntry $thread 'pending' 1
+    Invoke-Element (Wait-Element 'InboxOpenPendingApproval') 'show the existing pending request'
+    $alwaysLabel = if ($Language -eq 'ja') { 'ファイルの承認: 毎回' } else { 'File approval: Every time' }
+    $firstLabel = if ($Language -eq 'ja') { '初回ファイル共有' } else { 'Confirm the first file share' }
+    Assert-AttachmentPolicyHelp $alwaysLabel
+    Set-AttachmentApprovalPolicy 'FileAttachmentModeFirst' 'first'
+    Assert-AttachmentPolicyHelp $firstLabel
+    Wait-InboxEntry $thread 'pending' 1 | Out-Null
+    Assert (@(Read-Observations | Where-Object method -eq 'turn/start').Count -eq 0) 'Refreshing the approval preview started an execution.'
+    Set-AttachmentApprovalPolicy 'FileAttachmentModeAlways' 'always'
+    Assert-AttachmentPolicyHelp $alwaysLabel
+    Add-Pass 'Saving an attachment policy updates the pending request preview without starting it'
     Assert-NoSecretMetadata @($privatePrompt, $privateResult, 'LIVE_STEER_FINAL')
     $pendingRepliesBeforeRestart = Wait-StableReplyCount
     Add-Pass 'Pending request is represented by content-free inbox metadata before restart'
@@ -391,13 +426,30 @@ try {
     $errorChildren = $connectionError.FindAll([Windows.Automation.TreeScope]::Descendants,
         [Windows.Automation.Condition]::TrueCondition)
     foreach ($child in $errorChildren) { if (-not [string]::IsNullOrWhiteSpace($child.Current.Name)) { $errorText.Add($child.Current.Name) } }
-    $expectedError = if ($Language -eq 'ja') { '作業フォルダーの設定が不正です。エージェント設定で、存在するフォルダーの絶対パスを選択してください。' } else { 'The working folder setting is invalid. In Agent settings, select an existing folder using its full absolute path.' }
+    $expectedError = if ($Language -eq 'ja') { '作業フォルダーを確認してください。設定するまで依頼を受信できません。' } else { "Check the working folder. Chat requests can't be received until a folder is set." }
     Assert (($errorText -join "`n") -like "*$expectedError*") "Connect did not show localized InboxWorkspaceInvalid text: '$($errorText -join ' | ')'"
     Assert ((Results).connections -eq 0) 'Invalid workspace unexpectedly opened a loopback chat connection.'
     Assert (@(Read-UiHistory).Count -eq $historyBeforeInvalidConnect) 'Invalid-workspace connect changed execution history.'
     $metadataAfterInvalidConnect = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($metadataPath)))
     Assert ($metadataAfterInvalidConnect -eq $metadataBeforeInvalidConnect) 'Invalid-workspace connect changed chat conversation metadata bytes.'
     Add-Pass 'Invalid workspace shows localized error without connecting or changing history or Inbox metadata'
+
+    Stop-AppOnly
+    $recoveredWorkspace = Join-Path $script:data 'remounted-workspace'
+    $settings.WorkspaceRoot = $recoveredWorkspace
+    Write-JsonFile $settingsPath $settings
+    Start-ExistingIsolatedApp $false
+    Start-Inbox $false
+    Invoke-Element (Wait-Element 'ConnectMattermost') 'connect while the configured folder is missing'
+    Wait-Element 'InboxConnectionErrorAction' | Out-Null
+    New-Item -ItemType Directory -Path $recoveredWorkspace | Out-Null
+    Invoke-Element (Wait-Element 'ConnectMattermost') 'reconnect after the configured folder returns'
+    Wait-For { (Results).connections -eq 1 } 'loopback connection after the folder returns'
+    Wait-For {
+        $errorAction = Find-Element $script:window 'InboxConnectionErrorAction'
+        !$errorAction -or $errorAction.Current.IsOffscreen
+    } 'workspace warning to clear after successful reconnect'
+    Add-Pass 'Reconnecting after the workspace returns clears the repair warning'
 
     # Exercise save-time row isolation with an existing, trusted workspace path that
     # exceeds the persisted metadata limit. Approval stays required, so no agent turn runs.

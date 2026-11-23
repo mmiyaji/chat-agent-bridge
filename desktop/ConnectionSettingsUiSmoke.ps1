@@ -128,7 +128,7 @@ function Read-Observations {
     if (-not (Test-Path -LiteralPath $script:observations)) { return @() }
     @((Get-Content -LiteralPath $script:observations | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_ | ConvertFrom-Json }))
 }
-function Start-IsolatedApp {
+function Start-IsolatedApp([switch]$SeedOnly) {
     $workspace = Join-Path $script:data 'workspace'
     $agentRoot = Join-Path $script:data 'agent'
     New-Item -ItemType Directory -Force -Path $workspace, $agentRoot | Out-Null
@@ -173,6 +173,7 @@ function Start-IsolatedApp {
     Save-Json (Join-Path $script:data 'sessions.json') @{ SchemaVersion = 1; Bindings = @(); Workspaces = @() }
     Save-Json (Join-Path $script:data 'history.json') @{ SchemaVersion = 1; Records = @() }
     Save-Json (Join-Path $script:data 'audit.json') @{ SchemaVersion = 1; Records = @() }
+    if ($SeedOnly) { return }
     $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $appRoot 'ChatAgentBridge.Desktop.exe'))
     $start.UseShellExecute = $false; $start.WorkingDirectory = [IO.Path]::GetTempPath()
     $start.ArgumentList.Add('--data-dir'); $start.ArgumentList.Add($script:data)

@@ -80,7 +80,10 @@ function Launch([string]$Data,[string]$UpdateReadyEvent) {
     $start.UseShellExecute = $false
     $start.WorkingDirectory = $install
     $start.ArgumentList.Add('--data-dir'); $start.ArgumentList.Add($Data)
-    if ($UpdateReadyEvent) { $start.Environment['CAB_PORTABLE_UPDATE_READY_EVENT'] = $UpdateReadyEvent }
+    if ($UpdateReadyEvent) {
+        $start.Environment['CAB_PORTABLE_UPDATE_READY_EVENT'] = $UpdateReadyEvent
+        $start.Environment['CAB_PORTABLE_UPDATE_FULL_STARTUP'] = '1'
+    }
     $process = [Diagnostics.Process]::Start($start)
     if (-not $process -or $process.Id -eq 39892) { throw 'Refusing an unexpected app process.' }
     [void]$owned.Add($process.Id)

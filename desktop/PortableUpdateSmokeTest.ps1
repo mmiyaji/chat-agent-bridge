@@ -3,6 +3,7 @@ param(
     [string]$WorkingDirectory = (Join-Path $PSScriptRoot 'artifacts'),
     [string]$OldArchivePath,
     [switch]$RollbackOnly,
+    [switch]$SlowStartup,
     [ValidateSet('Ok', 'WindowClose')][string]$CloseAction = 'Ok',
     [ValidateSet('en', 'ja')][string]$Language = 'en',
     [switch]$KeepRunningOnFailure
@@ -20,6 +21,9 @@ function Resolve-TestArchive([string]$Path) {
 }
 $archive = Resolve-TestArchive $ArchivePath
 $oldArchive = if ($OldArchivePath) { Resolve-TestArchive $OldArchivePath } else { $archive }
+if ($SlowStartup -and ($RollbackOnly -or -not $OldArchivePath)) {
+    throw 'SlowStartup requires a separate old archive and the success case.'
+}
 $testRoot = Join-Path $workRoot ('portable-update-smoke-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $testRoot | Out-Null
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -184,6 +188,9 @@ try {
         $policy = [regex]::Match((Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/OnboardingConsentStore.cs') -Raw), 'CurrentPolicyVersion\s*=\s*"([^"]+)"').Groups[1].Value
         Write-Json (Join-Path $data 'consent.json') @{ PolicyVersion=$policy; AcceptedAtUtc=[DateTimeOffset]::UtcNow.ToString('o') }
         Write-Json (Join-Path $data 'pricing-auto.json') @{ schemaVersion=1; autoUpdateEnabled=$false; catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw) }
+        if ($SlowStartup -and -not $rollback) {
+            Write-Json (Join-Path $data 'startup-fixture.json') @{ mode='update-slow' }
+        }
         [IO.File]::WriteAllText((Join-Path $data 'history-sentinel.txt'), 'private history remains')
         $settingsPath = Join-Path $data 'settings.json'
         $historyPath = Join-Path $data 'history-sentinel.txt'
@@ -247,7 +254,17 @@ try {
         $running = @(Get-CimInstance Win32_Process -Filter "Name='ChatAgentBridge.Desktop.exe'" | Where-Object { $_.ExecutablePath -eq (Join-Path $install 'ChatAgentBridge.Desktop.exe') })
         Assert ($running.Count -eq 1) 'Exactly one updated/restored app must be running.'
         $restoredProcess = [Diagnostics.Process]::GetProcessById($running[0].ProcessId)
-        Wait-AppElement $restoredProcess 'NavAbout' 30 'Updated/restored app did not finish opening.' | Out-Null
+        $startupSeconds = $null
+        if ($SlowStartup -and -not $rollback) {
+            Wait-Until {
+                $about = Get-AppElement $restoredProcess 'NavAbout'
+                $about -and -not $about.Current.IsOffscreen -and $about.Current.IsEnabled
+            } 90 'The slow updated app did not finish opening.'
+            $startupSeconds = ([DateTime]::UtcNow - $restoredProcess.StartTime.ToUniversalTime()).TotalSeconds
+            Assert ($startupSeconds -gt 45) 'The slow startup fixture did not exceed the old updater timeout.'
+        } else {
+            Wait-AppElement $restoredProcess 'NavAbout' 30 'Updated/restored app did not finish opening.' | Out-Null
+        }
         $actualVersion = [string](Get-Content (Join-Path $install 'portable-release.json') -Raw | ConvertFrom-Json).releaseVersion
         $expectedVersion = if ($rollback) { $originalVersion } else { [string]$metadata.releaseVersion }
         Assert ($actualVersion -eq $expectedVersion) "Installed version '$actualVersion' did not match expected version '$expectedVersion'."
@@ -257,6 +274,7 @@ try {
         if (-not $rollback) { Assert (-not (Test-Path $stage)) 'Successful update retained the extracted payload.' }
         $results.Add(@{
             case=$name; success=$true; expectedVersion=$expectedVersion; actualVersion=$actualVersion
+            startupSeconds=$startupSeconds
             helperExitCode=$helper.ExitCode; closeMethod=$(if ($dialogResult) { $dialogResult.closeMethod } else { $null })
             dialogScreenshot=$(if ($dialogResult) { $dialogResult.screenshot } else { $null })
             dialogTextVerified=[bool]$dialogResult; settingsHashPreserved=$true; settingsSha256=$settingsHash

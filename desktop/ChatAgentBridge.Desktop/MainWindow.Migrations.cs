@@ -87,7 +87,8 @@ public sealed partial class MainWindow
             token.ThrowIfCancellationRequested();
             attempt.CancelAfter(Timeout.InfiniteTimeSpan);
             UpdateSettingsSearchVisibility();
-            if (_startupReady.TrySetResult()) SignalPortableUpdateReady();
+            if (_startupReady.TrySetResult() && PortableUpdateReadyEvent is { } eventName)
+                SignalPortableUpdateReady(eventName);
         }
         catch (OperationCanceledException) when (_startupLifetime.IsCancellationRequested) { }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -108,9 +109,8 @@ public sealed partial class MainWindow
         }
     }
 
-    private void SignalPortableUpdateReady()
+    internal static void SignalPortableUpdateReady(string eventName)
     {
-        if (PortableUpdateReadyEvent is not { } eventName) return;
         try
         {
             using var ready = EventWaitHandle.OpenExisting(eventName);
