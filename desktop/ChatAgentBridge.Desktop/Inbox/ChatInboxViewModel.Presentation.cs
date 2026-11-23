@@ -119,11 +119,15 @@ public sealed partial class InboxConversation
 public sealed partial class ChatInboxViewModel
 {
     public bool ShowRequestPicker => SelectedConversation?.Requests.Count > 1;
+    public bool ShowApprovalPolicyUnavailable => IsSelectedPending && Selected?.IsApprovalPreviewUnavailable == true;
+    public bool ShowApprovalPolicyDetails => !ShowApprovalPolicyUnavailable;
     public string SelectedAgentLabel => Selected is { } item ? AgentDisplayName(item.ApprovalPreviewSettings ?? item.Settings) : "";
     public string SelectedResultPolicyLabel => Selected is { } item ? ResultLabel((item.ApprovalPreviewSettings ?? item.Settings).ChatResultMode) : "";
 
     private void NotifySelectedPolicyPresentation()
     {
+        OnPropertyChanged(nameof(ShowApprovalPolicyUnavailable));
+        OnPropertyChanged(nameof(ShowApprovalPolicyDetails));
         OnPropertyChanged(nameof(SelectedAgentLabel));
         OnPropertyChanged(nameof(SelectedResultPolicyLabel));
         OnPropertyChanged(nameof(SelectedApprovalPolicyHelp));

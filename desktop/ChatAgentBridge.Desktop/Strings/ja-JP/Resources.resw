@@ -1505,4 +1505,5 @@
   <data name="FileAttachmentScopeRun.Content" xml:space="preserve"><value>今回の実行で作ったファイルのみ（既定）</value></data>
   <data name="FileAttachmentScopeConversation.Content" xml:space="preserve"><value>この会話で作ったファイル</value></data>
   <data name="FileAttachmentScopeWorkspace.Content" xml:space="preserve"><value>ワークスペース全体（毎回確認）</value></data>
+  <data name="InboxApprovalPolicyUnavailable.Text" xml:space="preserve"><value>この依頼の承認設定を確認できません。</value></data>
 </root>

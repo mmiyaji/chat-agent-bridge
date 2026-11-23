@@ -25,6 +25,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public BridgeSettings Settings { get; } = settings;
     public BridgeSettings? EffectiveSettings { get; set; }
     [ObservableProperty] internal partial BridgeSettings? ApprovalPreviewSettings { get; set; }
+    [ObservableProperty] internal partial bool IsApprovalPreviewUnavailable { get; set; }
     [ObservableProperty, NotifyPropertyChangedFor(nameof(Source)), NotifyPropertyChangedFor(nameof(UserIdentity))]
     public partial string? UserName { get; set; } = request.UserDisplayName;
     public string UserIdentity => Presentation.UserIdentityText.Format(UserName, Request.UserId);
@@ -717,7 +718,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     if (ReferenceEquals(item, Selected))
                     {
                         if (args.PropertyName == nameof(InboxItem.ResultText)) OnPropertyChanged(nameof(HasSelectedResult));
-                        if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.SessionLabel) or nameof(InboxItem.ApprovalPreviewSettings))
+                        if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.SessionLabel) or
+                            nameof(InboxItem.ApprovalPreviewSettings) or nameof(InboxItem.IsApprovalPreviewUnavailable))
                         {
                             OnPropertyChanged(nameof(IsSelectedPending));
                             NotifySelectedPolicyPresentation();
@@ -1048,6 +1050,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var effectiveSettings = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
             item.EffectiveSettings = effectiveSettings;
             item.ApprovalPreviewSettings = effectiveSettings;
+            item.IsApprovalPreviewUnavailable = false;
             item.Workspace = effectiveSettings.WorkspaceRoot;
             if (!ExecutionPolicy.IsWorkspaceTrusted(effectiveSettings, effectiveSettings.WorkspaceRoot))
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceOutsideTrustedRootsShort"));
@@ -1699,6 +1702,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 var (effective, binding) = await ResolveApprovalPreviewAsync(key, await _store.LoadAsync());
                 if (revision != _approvalPreviewRevision || item.State != "承認待ち" || ReferenceEquals(item, _activeItem)) continue;
                 item.ApprovalPreviewSettings = effective;
+                item.IsApprovalPreviewUnavailable = false;
                 item.Workspace = effective.WorkspaceRoot;
                 if (await _sessions.CheckApprovalAsync(key, effective, binding, switchCommand: switchesConversation) is { Required: true } check)
                 {
@@ -1760,19 +1764,19 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             .ToLookup(CreateSessionKey);
         foreach (var conversation in pending)
         {
-            BridgeSettings preview;
+            BridgeSettings? preview = null;
             try { (preview, _) = await ResolveApprovalPreviewAsync(conversation.Key, settings); }
             catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or
                 UnauthorizedAccessException or System.Text.Json.JsonException)
             {
                 // Approval will recheck the session. A preview failure alone must not revoke access.
-                continue;
             }
             foreach (var item in conversation.Where(item => item.State == "承認待ち" &&
                          !ReferenceEquals(item, _activeItem) && Requests.Contains(item)))
             {
+                item.IsApprovalPreviewUnavailable = preview is null;
                 item.ApprovalPreviewSettings = preview;
-                item.Workspace = preview.WorkspaceRoot;
+                if (preview is not null) item.Workspace = preview.WorkspaceRoot;
             }
         }
     }

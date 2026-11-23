@@ -491,11 +491,15 @@
                                      CloseButtonClick="ApprovalHelp_Close"
                                      IsLightDismissEnabled="True" AutomationProperties.AutomationId="InboxApprovalHelpTip"
                                      x:Uid="InboxApprovalHelpTip">
-                            <StackPanel Spacing="8" MaxWidth="360">
-                                <TextBlock Text="{x:Bind ViewModel.SelectedApprovalPolicyHelp, Mode=OneWay}" TextWrapping="Wrap" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedResultPolicyHelp, Mode=OneWay}" TextWrapping="Wrap" />
-                                <TextBlock Text="{x:Bind ViewModel.SelectedAttachmentPolicyHelp, Mode=OneWay}" TextWrapping="Wrap" />
-                            </StackPanel>
+                            <Grid MaxWidth="360">
+                                <StackPanel Spacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.ShowApprovalPolicyDetails), Mode=OneWay}">
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedApprovalPolicyHelp, Mode=OneWay}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedResultPolicyHelp, Mode=OneWay}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedAttachmentPolicyHelp, Mode=OneWay}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <TextBlock x:Uid="InboxApprovalPolicyUnavailable" TextWrapping="Wrap"
+                                           Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.ShowApprovalPolicyUnavailable), Mode=OneWay}" />
+                            </Grid>
                         </TeachingTip>
                         <StackPanel x:Name="InboxCommandBar" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                     HorizontalAlignment="Right" AutomationProperties.AutomationId="InboxCommandBar">

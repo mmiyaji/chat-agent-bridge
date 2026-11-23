@@ -87,6 +87,8 @@ $nextZip = Join-Path $packageDirectory "ChatAgentBridge.Portable-$($release.Rele
 
 ポータブル版 1.1.2 のヘルパーは、ウィンドウを起動できた時点で更新を確認します。新版のヘルパーは設定と画面の初期化完了まで待ちます。旧ヘルパーの45秒を超える正常起動を試す場合は、`CABStartupFixture=true` でビルドした検証専用 ZIP と公開済みの旧版 ZIP を指定し、`PortableUpdateSmokeTest.ps1` に `-SlowStartup` を追加します。
 
+新版ヘルパーで画面初期化失敗後の復元を試す場合は、新版ヘルパーを含む通常 ZIP を `-OldArchivePath` に、`CABStartupFixture=true` の検証専用 ZIP を `-ArchivePath` に指定し、`-RollbackOnly -PageStartupFailure` を追加します。更新後の画面にエラーが表示されること、ヘルパーが復元を完了すること、復元したアプリが起動することを確認します。
+
 画面からダウンロード・再起動まで試す方法は、[アップデータのローカル試験](docs/portable-update-tryout.ja.md)を参照してください。
 確認する項目:
 

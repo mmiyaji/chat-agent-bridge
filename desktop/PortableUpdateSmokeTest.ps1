@@ -4,6 +4,7 @@ param(
     [string]$OldArchivePath,
     [switch]$RollbackOnly,
     [switch]$SlowStartup,
+    [switch]$PageStartupFailure,
     [ValidateSet('Ok', 'WindowClose')][string]$CloseAction = 'Ok',
     [ValidateSet('en', 'ja')][string]$Language = 'en',
     [switch]$KeepRunningOnFailure
@@ -23,6 +24,9 @@ $archive = Resolve-TestArchive $ArchivePath
 $oldArchive = if ($OldArchivePath) { Resolve-TestArchive $OldArchivePath } else { $archive }
 if ($SlowStartup -and ($RollbackOnly -or -not $OldArchivePath)) {
     throw 'SlowStartup requires a separate old archive and the success case.'
+}
+if ($PageStartupFailure -and (-not $RollbackOnly -or $oldArchive -eq $archive)) {
+    throw 'PageStartupFailure requires RollbackOnly, an ordinary installed archive, and a separate startup-fixture update archive.'
 }
 $testRoot = Join-Path $workRoot ('portable-update-smoke-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $testRoot | Out-Null
@@ -97,11 +101,11 @@ function Get-DialogText($Dialog) {
     foreach ($text in $texts) { if ($text.Current.Name) { $parts.Add([string]$text.Current.Name) } }
     return $parts -join "`n"
 }
-function Capture-DialogScreenshot([long]$Hwnd, [string]$Path) {
-    Assert ($Hwnd -gt 0) 'Refusing to capture a dialog with an invalid HWND.'
+function Capture-WindowScreenshot([long]$Hwnd, [string]$Path) {
+    Assert ($Hwnd -gt 0) 'Refusing to capture an invalid HWND.'
     $output = & winapp ui screenshot -w $Hwnd -o $Path 2>&1
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $Path) -or (Get-Item -LiteralPath $Path).Length -le 0) {
-        throw "Could not capture the rollback failure dialog: $($output -join ' ')"
+        throw "Could not capture window screenshot '$Path': $($output -join ' ')"
     }
 }
 function Dismiss-HelperMessage([Diagnostics.Process]$Helper, [string]$Method, [string]$ScreenshotPath, [string]$ExpectedText) {
@@ -112,7 +116,7 @@ function Dismiss-HelperMessage([Diagnostics.Process]$Helper, [string]$Method, [s
     Assert ($dialog.Current.ProcessId -eq $Helper.Id) 'Rollback dialog belongs to a different process.'
     $dialogText = Get-DialogText $dialog
     Assert ($dialogText.Contains($ExpectedText, [StringComparison]::Ordinal)) 'Rollback dialog did not contain the localized previous-version restored message.'
-    Capture-DialogScreenshot $hwnd $ScreenshotPath
+    Capture-WindowScreenshot $hwnd $ScreenshotPath
     if ($Method -eq 'Ok') {
         $button = $dialog.FindFirst([Windows.Automation.TreeScope]::Descendants,
             [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, '2'))
@@ -148,7 +152,7 @@ var stage = await PortableArchiveStager.ExtractAsync(args[0], args[1], candidate
 await File.WriteAllTextAsync(args[2], JsonSerializer.Serialize(stage.Files));
 '@)
 function Stage-Archive([string]$Path, [string]$Destination, [string]$ManifestPath) {
-    & dotnet run --project (Join-Path $probe 'Probe.csproj') -- $Path $Destination $ManifestPath
+    & dotnet run --project (Join-Path $probe 'Probe.csproj') --artifacts-path (Join-Path $testRoot 'build') -- $Path $Destination $ManifestPath
     if ($LASTEXITCODE) { throw "Production archive staging failed for '$Path'." }
     return (Get-Content -LiteralPath (Join-Path $Destination 'portable-release.json') -Raw | ConvertFrom-Json)
 }
@@ -158,6 +162,9 @@ $suitePassed = $false
 $case = $null
 $app = $null
 $helper = $null
+$readyEvent = $null
+$failedApp = $null
+$pageFailure = $null
 try {
     $cases = if ($RollbackOnly) { @($true) } else { @($false, $true) }
     foreach ($rollback in $cases) {
@@ -191,6 +198,9 @@ try {
         if ($SlowStartup -and -not $rollback) {
             Write-Json (Join-Path $data 'startup-fixture.json') @{ mode='update-slow' }
         }
+        if ($PageStartupFailure) {
+            Write-Json (Join-Path $data 'startup-fixture.json') @{ mode='page-error' }
+        }
         [IO.File]::WriteAllText((Join-Path $data 'history-sentinel.txt'), 'private history remains')
         $settingsPath = Join-Path $data 'settings.json'
         $historyPath = Join-Path $data 'history-sentinel.txt'
@@ -204,7 +214,7 @@ try {
         Assert (-not [string]::IsNullOrWhiteSpace($originalVersion)) 'Old archive did not provide a release version.'
         Assert ((Get-Content (Join-Path $install 'portable-release.json') -Raw | ConvertFrom-Json).releaseVersion -eq $originalVersion) 'Installed old archive version did not match its metadata.'
 
-        if ($rollback) {
+        if ($rollback -and -not $PageStartupFailure) {
             # A correctly hashed release can still fail startup, e.g. invalid runtime configuration.
             [IO.File]::WriteAllText((Join-Path $stage 'ChatAgentBridge.Desktop.runtimeconfig.json'), '{}')
             $rows = @(Get-ChildItem -LiteralPath $stage -Recurse -File | Where-Object Name -ne 'SHA256SUMS.txt' | Sort-Object FullName | ForEach-Object {
@@ -217,7 +227,15 @@ try {
         Get-ChildItem -LiteralPath $stage -Recurse -File | ForEach-Object {
             $files[[IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\','/')] = (Get-FileHash -LiteralPath $_.FullName).Hash.ToLowerInvariant()
         }
-        $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $install 'ChatAgentBridge.Desktop.exe'))
+        $appExe = Join-Path $install 'ChatAgentBridge.Desktop.exe'
+        $previousFiles = @{}
+        if ($PageStartupFailure) {
+            foreach ($relative in $oldManifest.files) {
+                $previousFiles[$relative] = (Get-FileHash -LiteralPath (Join-Path $install $relative)).Hash.ToLowerInvariant()
+            }
+            Assert ($previousFiles['ChatAgentBridge.Desktop.dll'] -ne $files['ChatAgentBridge.Desktop.dll']) 'The startup-failure archive must contain a different application DLL.'
+        }
+        $start = [Diagnostics.ProcessStartInfo]::new($appExe)
         $start.UseShellExecute=$false
         $start.ArgumentList.Add('--data-dir'); $start.ArgumentList.Add($data)
         $app = [Diagnostics.Process]::Start($start)
@@ -236,8 +254,53 @@ try {
         Stop-TestApp $app
         $app.Dispose(); $app = $null
         $resultFile = Join-Path $work 'update-result.json'
+        if ($PageStartupFailure) {
+            $relaunch = @{}
+            Wait-Until {
+                $candidate = Get-CimInstance Win32_Process -Filter "Name='ChatAgentBridge.Desktop.exe' AND ParentProcessId=$($helper.Id)" |
+                    Where-Object { $_.ExecutablePath -eq $appExe } | Select-Object -First 1
+                if ($candidate) { $relaunch.pid = $candidate.ProcessId }
+                return [bool]$candidate -or (Test-Path -LiteralPath $resultFile)
+            } 30 'The updater did not start the staged application.'
+            Assert ([bool]$relaunch.pid) 'The helper finished without a detectable updated application process.'
+            $failedApp = [Diagnostics.Process]::GetProcessById($relaunch.pid)
+            $readyEvent = [Threading.EventWaitHandle]::OpenExisting('Local\ChatAgentBridge.Update.' + $nonce)
+            Wait-Until {
+                $errorBar = Get-AppElement $failedApp 'StartupMigrationError'
+                $errorBar -and -not $errorBar.Current.IsOffscreen
+            } 20 'The updated application did not show its startup failure.'
+            $failedApp.Refresh()
+            $errorTitle = (Get-AppElement $failedApp 'StartupMigrationTitle').Current.Name
+            Assert ($errorTitle -in @('The app could not be initialized', 'アプリを初期化できませんでした')) 'The updated application showed an error other than page initialization failure.'
+            $retry = Get-AppElement $failedApp 'StartupMigrationRetry'
+            Assert (-not $retry -or $retry.Current.IsOffscreen) 'Retry was exposed for a failed update launch that requires full startup.'
+            Assert (-not $readyEvent.WaitOne(0)) 'The helper readiness event was signaled by the failed app.'
+            Assert ((Get-FileHash -LiteralPath (Join-Path $install 'ChatAgentBridge.Desktop.dll')).Hash -eq $files['ChatAgentBridge.Desktop.dll']) 'The failed process did not run the staged application DLL.'
+            $startupScreenshot = Join-Path $testRoot 'updated-app-startup-failure.png'
+            Capture-WindowScreenshot ([long]$failedApp.MainWindowHandle) $startupScreenshot
+            $pageFailure = @{
+                installedVersion=$originalVersion; attemptedVersion=[string]$metadata.releaseVersion
+                previousDllSha256=$previousFiles['ChatAgentBridge.Desktop.dll']; stagedDllSha256=$files['ChatAgentBridge.Desktop.dll']
+                helperSha256=(Get-FileHash -LiteralPath $helperExe).Hash.ToLowerInvariant()
+                failedAppPid=$failedApp.Id; startupErrorTitle=$errorTitle; startupErrorScreenshot=$startupScreenshot; retrySuppressed=$true
+            }
+            Write-Output 'Observed the updated application window showing its startup error. Waiting for the helper to roll back.'
+        }
         Wait-Until { Test-Path -LiteralPath $resultFile } 110 'Updater did not finish.'
         $result = Get-Content -LiteralPath $resultFile -Raw | ConvertFrom-Json
+        if ($PageStartupFailure) {
+            Assert (-not $readyEvent.WaitOne(0)) 'The helper readiness event was signaled before rollback finished.'
+            Assert ($failedApp.HasExited) 'The failed updated application was still running after rollback.'
+            Assert ($result.Version -eq $metadata.releaseVersion -and $result.Error -eq 'IOException') 'The helper did not report startup confirmation failure for the attempted version.'
+            $phase = Get-Content -LiteralPath (Join-Path $work 'update-phase.json') -Raw | ConvertFrom-Json
+            Assert ($phase.phase -eq 'rolled_back') 'The helper did not record the final rollback phase.'
+            foreach ($relative in $previousFiles.Keys) {
+                Assert ((Get-FileHash -LiteralPath (Join-Path $install $relative)).Hash -eq $previousFiles[$relative]) "Rollback did not restore '$relative' byte for byte."
+            }
+            $pageFailure.readyEventSignaled = $false
+            $pageFailure.restoredManagedFileCount = $previousFiles.Count
+            $pageFailure.updateResult = $result
+        }
         $dialogResult = $null
         if ($rollback) {
             $expectedText = if ($Language -eq 'ja') { '以前の版に戻しました。' } else { 'The previous version has been restored.' }
@@ -251,7 +314,7 @@ try {
         Assert ((Get-FileHash -LiteralPath $historyPath).Hash -eq $historyHash) 'History sentinel hash changed.'
         Assert (Test-Path (Join-Path $work 'backup/old-managed.txt')) 'Previous managed file was not backed up.'
         Assert ((Test-Path (Join-Path $install 'old-managed.txt')) -eq $rollback) 'Managed files were not applied/restored.'
-        $running = @(Get-CimInstance Win32_Process -Filter "Name='ChatAgentBridge.Desktop.exe'" | Where-Object { $_.ExecutablePath -eq (Join-Path $install 'ChatAgentBridge.Desktop.exe') })
+        $running = @(Get-CimInstance Win32_Process -Filter "Name='ChatAgentBridge.Desktop.exe'" | Where-Object { $_.ExecutablePath -eq $appExe })
         Assert ($running.Count -eq 1) 'Exactly one updated/restored app must be running.'
         $restoredProcess = [Diagnostics.Process]::GetProcessById($running[0].ProcessId)
         $startupSeconds = $null
@@ -269,6 +332,10 @@ try {
         $expectedVersion = if ($rollback) { $originalVersion } else { [string]$metadata.releaseVersion }
         Assert ($actualVersion -eq $expectedVersion) "Installed version '$actualVersion' did not match expected version '$expectedVersion'."
         if ($rollback) { Assert ($actualVersion -eq $originalVersion) 'Rollback did not restore the pre-update version.' }
+        if ($PageStartupFailure) {
+            Assert ($restoredProcess.Id -ne $failedApp.Id) 'The helper did not launch a new restored process.'
+            $pageFailure.restoredAppPid = $restoredProcess.Id
+        }
         Stop-TestApp $restoredProcess
         $restoredProcess.Dispose()
         if (-not $rollback) { Assert (-not (Test-Path $stage)) 'Successful update retained the extracted payload.' }
@@ -279,6 +346,7 @@ try {
             dialogScreenshot=$(if ($dialogResult) { $dialogResult.screenshot } else { $null })
             dialogTextVerified=[bool]$dialogResult; settingsHashPreserved=$true; settingsSha256=$settingsHash
             historyHashPreserved=$true; historySha256=$historyHash; restartConfirmed=$true
+            pageStartupFailure=$pageFailure
         })
         Write-Output "PASS $name : real helper, localized failure dialog, app restart, preserved data and managed-file handling"
         $helper.Dispose(); $helper = $null
@@ -288,13 +356,18 @@ try {
     Write-Output "Artifacts: $testRoot"
 }
 catch {
-    Write-Json (Join-Path $testRoot 'results.json') @{ success=$false; failedCase=$(if ($case) { Split-Path $case -Leaf } else { $null }); error=$_.Exception.Message; completedCases=$results.ToArray() }
+    Write-Json (Join-Path $testRoot 'results.json') @{ success=$false; failedCase=$(if ($case) { Split-Path $case -Leaf } else { $null }); error=$_.Exception.Message; completedCases=$results.ToArray(); pageStartupFailure=$pageFailure }
     if ($KeepRunningOnFailure) { Write-Output "Failure artifacts and any live test processes retained under: $testRoot" }
     throw
 }
 finally {
-    # These executables were copied and launched only below this unique test root.
+    if ($readyEvent) { $readyEvent.Dispose() }
+    if ($failedApp) { $failedApp.Dispose() }
     if ($suitePassed -or -not $KeepRunningOnFailure) {
+        # The copied helper runs from the isolated updater cache rather than the test root.
+        if ($helper -and -not $helper.HasExited) {
+            Stop-Process -InputObject $helper -Force -ErrorAction SilentlyContinue
+        }
         Get-CimInstance Win32_Process | Where-Object {
             $_.Name -in @('ChatAgentBridge.Desktop.exe','ChatAgentBridge.Updater.exe') -and
             $_.ExecutablePath -and $_.ExecutablePath.StartsWith($testRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)

@@ -137,13 +137,17 @@ function Set-AttachmentApprovalPolicy([string]$OptionId, [string]$Mode) {
     Start-Inbox
 }
 
-function Assert-AttachmentPolicyHelp([string]$Label) {
+function Assert-AttachmentPolicyHelp([string]$Label, [string]$ExcludedLabel) {
     Invoke-Element (Wait-Element 'InboxApprovalHelp') 'open approval policy help for the pending request'
     $tip = Wait-ProcessElement 'InboxApprovalHelpTip'
     Wait-For {
         $texts = $tip.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
-        @($texts | Where-Object { $_.Current.Name -like "*$Label*" }).Count -gt 0
+        @($texts | Where-Object { -not $_.Current.IsOffscreen -and $_.Current.Name -like "*$Label*" }).Count -gt 0
     } "pending request attachment policy '$Label'"
+    if ($ExcludedLabel) {
+        $texts = $tip.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
+        Assert (@($texts | Where-Object { -not $_.Current.IsOffscreen -and $_.Current.Name -like "*$ExcludedLabel*" }).Count -eq 0) 'The approval hint still shows the stale file policy.'
+    }
     Invoke-Element (Find-Element $tip 'CloseButton') 'close approval policy help'
 }
 
@@ -274,6 +278,13 @@ try {
     $alwaysLabel = if ($Language -eq 'ja') { 'ファイルの承認: 毎回' } else { 'File approval: Every time' }
     $firstLabel = if ($Language -eq 'ja') { '初回ファイル共有' } else { 'Confirm the first file share' }
     Assert-AttachmentPolicyHelp $alwaysLabel
+    $conversationWorkspace = Join-Path $settings.WorkspaceRoot 'conversation-workspace'
+    [IO.Directory]::CreateDirectory($conversationWorkspace) | Out-Null
+    $previewSessionsPath = Join-Path $script:data 'sessions.json'
+    $originalSessions = [IO.File]::ReadAllText($previewSessionsPath)
+    Write-JsonFile $previewSessionsPath @{
+        SchemaVersion = 1; Bindings = @(); Workspaces = @(@{ Key = $pending.Key; WorkspaceRoot = $conversationWorkspace })
+    }
     Set-AttachmentApprovalPolicy 'FileAttachmentModeFirst' 'first'
     Assert-AttachmentPolicyHelp $firstLabel
     Wait-InboxEntry $thread 'pending' 1 | Out-Null
@@ -281,6 +292,23 @@ try {
     Set-AttachmentApprovalPolicy 'FileAttachmentModeAlways' 'always'
     Assert-AttachmentPolicyHelp $alwaysLabel
     Add-Pass 'Saving an attachment policy updates the pending request preview without starting it'
+
+    $offlineWorkspace = "$conversationWorkspace-offline"
+    [IO.Directory]::Move($conversationWorkspace, $offlineWorkspace)
+    Set-AttachmentApprovalPolicy 'FileAttachmentModeFirst' 'first'
+    $unavailableLabel = if ($Language -eq 'ja') { 'この依頼の承認設定を確認できません。' } else { 'Approval settings are unavailable for this request.' }
+    Assert-AttachmentPolicyHelp $unavailableLabel $alwaysLabel
+    Assert ((Wait-Element 'ApproveChat').Current.IsEnabled) 'The unavailable preview disabled the pending request.'
+    [IO.Directory]::Move($offlineWorkspace, $conversationWorkspace)
+    Set-AttachmentApprovalPolicy 'FileAttachmentModeAlways' 'always'
+    Assert-AttachmentPolicyHelp $alwaysLabel $unavailableLabel
+    Wait-InboxEntry $thread 'pending' 1 | Out-Null
+    Assert (@(Read-Observations | Where-Object method -eq 'turn/start').Count -eq 0) 'Refreshing the unavailable approval preview started an execution.'
+    Add-Pass 'An unavailable conversation workspace hides stale approval settings and keeps the request pending until recovery'
+
+    # The subsequent execution cases use the TestAgent's marked default workspace.
+    [IO.File]::WriteAllText($previewSessionsPath, $originalSessions)
+
     Assert-NoSecretMetadata @($privatePrompt, $privateResult, 'LIVE_STEER_FINAL')
     $pendingRepliesBeforeRestart = Wait-StableReplyCount
     Add-Pass 'Pending request is represented by content-free inbox metadata before restart'

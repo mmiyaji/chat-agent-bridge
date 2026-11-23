@@ -1505,4 +1505,5 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="FileAttachmentScopeRun.Content" xml:space="preserve"><value>Only files created in this run (default)</value></data>
   <data name="FileAttachmentScopeConversation.Content" xml:space="preserve"><value>Files created in this conversation</value></data>
   <data name="FileAttachmentScopeWorkspace.Content" xml:space="preserve"><value>Whole workspace (always ask)</value></data>
+  <data name="InboxApprovalPolicyUnavailable.Text" xml:space="preserve"><value>Approval settings are unavailable for this request.</value></data>
 </root>
