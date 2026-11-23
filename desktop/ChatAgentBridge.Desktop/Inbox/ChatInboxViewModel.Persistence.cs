@@ -23,12 +23,13 @@ public sealed partial class ChatInboxViewModel
     private HashSet<SessionKey> _cachedConversationNameKeys = [];
     private int _lastReportedRejectedConversationCount;
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowEmptyConversationList))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowEmptyConversationList), nameof(ShowChatSetupNotice),
+        nameof(ShowConnectionErrorNotice), nameof(ShowWorkspaceRepairOnly))]
     public partial bool IsInitialConversationLoading { get; private set; } = true;
     [ObservableProperty]
     public partial bool IsConversationReloading { get; private set; }
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConversationPersistenceWarning)), NotifyPropertyChangedFor(nameof(ShowEmptyConversationList))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConversationPersistenceWarning), nameof(ShowEmptyConversationList), nameof(ShowChatSetupNotice))]
     public partial string ConversationPersistenceWarning { get; set; } = "";
     public bool HasConversationPersistenceWarning => ConversationPersistenceWarning.Length > 0;
     public bool HasSelectedRequest => Selected is not null && SelectedConversation?.Requests.Contains(Selected) == true;

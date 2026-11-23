@@ -227,7 +227,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         nameof(ConnectionErrorActionLabel), nameof(ConnectionSummaryStatus), nameof(ShowConnectionSummaryStatus))]
     public partial bool HasWorkspaceError { get; private set; }
     public bool HasConnectionError => HasWorkspaceError || HasTransportError;
-    public bool ShowWorkspaceRepairOnly => HasWorkspaceError && !IsConnected && Conversations.Count == 0;
+    public bool ShowConnectionErrorNotice => !IsInitialConversationLoading && HasConnectionError;
+    public bool ShowWorkspaceRepairOnly => !IsInitialConversationLoading && HasWorkspaceError && !IsConnected && Conversations.Count == 0;
     public string ConnectionErrorMessage => HasWorkspaceError ? DesktopText.Get("InboxWorkspaceInvalid") : Status;
     public string ConnectionErrorActionLabel => HasWorkspaceError ? DesktopText.Get("InboxChooseWorkingFolder") : MrtText.Get("InboxOpenConnectionSettings.Content");
     public bool ShowConnectionSummaryStatus => !HasWorkspaceError;
@@ -549,6 +550,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         OnPropertyChanged(nameof(ConversationCountLabel));
         OnPropertyChanged(nameof(HasVisibleConversations));
         OnPropertyChanged(nameof(ShowWorkspaceRepairOnly));
+        OnPropertyChanged(nameof(ShowChatSetupNotice));
         OnPropertyChanged(nameof(EmptyListMessage));
         OnPropertyChanged(nameof(HasConversationFilters));
         OnPropertyChanged(nameof(ShowEmptyConversationList));
@@ -1484,13 +1486,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         try
         {
             var settings = await _store.LoadAsync();
-            SetConnectReadiness(settings);
             if (!IsValidInboxWorkspacePath(settings.WorkspaceRoot) ||
                 HasWorkspaceError && !await Task.Run(() => Directory.Exists(settings.WorkspaceRoot)))
             {
                 ReportInvalidWorkspaceSettings();
+                SetConnectReadiness(settings);
                 return;
             }
+            SetConnectReadiness(settings);
             var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
             if (HasWorkspaceError)

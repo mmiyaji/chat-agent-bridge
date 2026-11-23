@@ -103,7 +103,7 @@
             <InfoBar x:Name="NotificationActionNotice" IsOpen="False" IsClosable="True" Severity="Warning"
                      Message="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}"
                      AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="NotificationActionNotice" />
-            <InfoBar IsOpen="{x:Bind ViewModel.HasConnectionError, Mode=OneWay}" IsClosable="False"
+            <InfoBar IsOpen="{x:Bind ViewModel.ShowConnectionErrorNotice, Mode=OneWay}" IsClosable="False"
                      Severity="Error" Message="{x:Bind ViewModel.ConnectionErrorMessage, Mode=OneWay}"
                      AutomationProperties.AutomationId="InboxConnectionError">
                 <InfoBar.ActionButton>

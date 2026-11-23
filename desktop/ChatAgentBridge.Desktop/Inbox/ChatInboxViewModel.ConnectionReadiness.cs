@@ -15,7 +15,8 @@ public sealed partial class ChatInboxViewModel
     public bool IsDiscordReadyToConnect => _isDiscordReadyToConnect;
     public bool HasAnyChatProviderReady => IsMattermostReadyToConnect || IsSlackReadyToConnect || IsDiscordReadyToConnect;
     public bool ShowConnectionSettingsButton => !IsConnected && !HasConnectionError && !_closing;
-    public bool ShowChatSetupNotice => _hasCheckedConnectReadiness && !HasAnyChatProviderReady &&
+    public bool ShowChatSetupNotice => !IsInitialConversationLoading && _hasCheckedConnectReadiness &&
+        Conversations.Count == 0 && !HasConversationPersistenceWarning && !HasAnyChatProviderReady &&
         !IsConnected && !HasConnectionError && !_closing;
     public string MattermostConnectionSetupHint => IsMattermostReadyToConnect ? "" : DesktopText.Get("ConnectMattermostSetupHint");
     public string SlackConnectionSetupHint => IsSlackReadyToConnect ? "" : DesktopText.Get("ConnectSlackSetupHint");

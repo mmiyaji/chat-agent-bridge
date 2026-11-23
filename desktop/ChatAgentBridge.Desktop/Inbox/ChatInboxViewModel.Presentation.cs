@@ -199,6 +199,7 @@ public sealed partial class ChatInboxViewModel
     private void NotifyConnectionPresentation()
     {
         OnPropertyChanged(nameof(ShowWorkspaceRepairOnly));
+        OnPropertyChanged(nameof(ShowConnectionErrorNotice));
         OnPropertyChanged(nameof(ConnectionProvider));
         OnPropertyChanged(nameof(ConnectionOverviewTarget));
         OnPropertyChanged(nameof(ConnectionTone));
