@@ -1200,7 +1200,7 @@
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLIを確認できませんでした</value></data>
   <data name="CliCheckSuccess.Title" xml:space="preserve"><value>CLIを確認しました</value></data>
   <data name="ReleaseHighlightsHeading.Text" xml:space="preserve"><value>主な変更点</value></data>
-  <data name="ReleaseHighlightsSummary.Text" xml:space="preserve"><value>• チャットから過去の生成ファイルを添付でき、共有範囲を選択可能&#10;• 添付ファイルの安全性と更新処理の信頼性を改善</value></data>
+  <data name="ReleaseHighlightsSummary.Text" xml:space="preserve"><value>• チャットの依頼詳細を整理し、狭い画面でも操作しやすく改善&#10;• 起動時の会話復元とポータブル版の更新後の起動確認を改善</value></data>
   <data name="UpdateNoticeAction.Content" xml:space="preserve"><value>変更点を見る</value></data>
   <data name="UpdateNoticeAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリの変更内容を確認</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Windowsサインイン時にこのアプリを起動</value></data>
